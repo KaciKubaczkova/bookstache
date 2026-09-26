@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Library, Plus, ArrowRight, Table } from 'lucide-react';
+import { Library, Plus, ArrowRight, Table, Search, X } from 'lucide-react';
 import { getLibraries, saveLibrary } from '../services/storage';
 
 export default function LibrarySelectModal({ role, currentLibrary, onSelectLibrary }) {
   const [libraries, setLibraries] = useState([]);
   const [newLibraryName, setNewLibraryName] = useState('');
   const [googleSheetUrl, setGoogleSheetUrl] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
   const [isCreating, setIsCreating] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
@@ -48,6 +49,10 @@ export default function LibrarySelectModal({ role, currentLibrary, onSelectLibra
     }
   };
 
+  const filteredLibraries = libraries.filter((lib) =>
+    (lib.name || '').toLowerCase().includes(searchQuery.trim().toLowerCase())
+  );
+
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-50">
       <div className="bg-[#f7f3ed] border-2 border-[#8b2626]/30 rounded-2xl max-w-lg w-full p-6 shadow-2xl relative overflow-hidden">
@@ -75,9 +80,34 @@ export default function LibrarySelectModal({ role, currentLibrary, onSelectLibra
 
         {/* Existing Libraries List */}
         <div className="mb-6">
-          <label className="block text-xs font-bold text-[#5c3a21] uppercase tracking-wider mb-2">
-            Registrované knihovny ({libraries.length})
-          </label>
+          <div className="flex items-center justify-between mb-2">
+            <label className="block text-xs font-bold text-[#5c3a21] uppercase tracking-wider">
+              Registrované knihovny ({searchQuery.trim() ? `${filteredLibraries.length} z ${libraries.length}` : libraries.length})
+            </label>
+          </div>
+
+          {libraries.length > 0 && (
+            <div className="relative mb-3">
+              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[#a1887f]" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Vyhledat knihovnu podle názvu..."
+                className="w-full pl-9 pr-8 py-2 text-xs bg-[#f7f3ed] border border-[#a1887f] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#8b2626] text-[#3a2212] placeholder-[#a1887f]"
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#a1887f] hover:text-[#3a2212] p-0.5 rounded-full cursor-pointer"
+                  title="Vymazat hledání"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+          )}
 
           {loading ? (
             <div className="text-center py-6 text-sm text-[#5c3a21]">Načítání knihoven...</div>
@@ -85,9 +115,13 @@ export default function LibrarySelectModal({ role, currentLibrary, onSelectLibra
             <div className="text-center py-6 bg-[#efe6d5] rounded-xl text-sm text-[#5c3a21] border border-dashed border-[#a1887f]">
               Zatím nebyla vytvořena žádná knihovna.
             </div>
+          ) : filteredLibraries.length === 0 ? (
+            <div className="text-center py-6 bg-[#efe6d5] rounded-xl text-sm text-[#5c3a21] border border-dashed border-[#a1887f]">
+              Žádná knihovna neodpovídá vyhledávání „{searchQuery}“.
+            </div>
           ) : (
             <div className="max-h-48 overflow-y-auto space-y-2 pr-1">
-              {libraries.map((lib) => (
+              {filteredLibraries.map((lib) => (
                 <button
                   key={lib.id}
                   onClick={() => handleSelect(lib)}
