@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Camera, Barcode, Search, AlertCircle, Loader2 } from 'lucide-react';
-import { Html5QrcodeScanner, Html5Qrcode } from 'html5-qrcode';
+import { Html5Qrcode } from 'html5-qrcode';
+import { lookupBookByIsbnOrTitle } from '../services/bookLookup';
 
 export default function ScannerModal({ isOpen, onClose, onBookFound }) {
   const [activeTab, setActiveTab] = useState('camera'); // 'camera' | 'manual' | 'title'
@@ -26,7 +27,6 @@ export default function ScannerModal({ isOpen, onClose, onBookFound }) {
 
   const startCamera = async () => {
     setCameraError('');
-    // Wait for container element
     setTimeout(async () => {
       const element = document.getElementById('qr-reader');
       if (!element) return;
@@ -53,7 +53,7 @@ export default function ScannerModal({ isOpen, onClose, onBookFound }) {
             stopCamera();
             handleLookup(decodedText);
           },
-          (errorMessage) => {
+          () => {
             // Ignore scan errors per frame
           }
         );
@@ -85,11 +85,7 @@ export default function ScannerModal({ isOpen, onClose, onBookFound }) {
     setError('');
 
     try {
-      const res = await fetch(`/api/books/lookup?query=${encodeURIComponent(query.trim())}`);
-      if (!res.ok) {
-        throw new Error('Chyba při vyhledávání v knižním katalogu');
-      }
-      const bookData = await res.json();
+      const bookData = await lookupBookByIsbnOrTitle(query.trim());
       onBookFound(bookData);
     } catch (err) {
       setError(err.message || 'Kniha nebyla nalezena. Můžete zadat údaje ručně.');

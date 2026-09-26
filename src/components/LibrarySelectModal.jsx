@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Library, Plus, ArrowRight, Table, ExternalLink } from 'lucide-react';
+import { Library, Plus, ArrowRight, Table } from 'lucide-react';
+import { getLibraries, saveLibrary } from '../services/storage';
 
 export default function LibrarySelectModal({ role, currentLibrary, onSelectLibrary }) {
   const [libraries, setLibraries] = useState([]);
@@ -13,14 +14,11 @@ export default function LibrarySelectModal({ role, currentLibrary, onSelectLibra
     fetchLibraries();
   }, []);
 
-  const fetchLibraries = async () => {
+  const fetchLibraries = () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/libraries');
-      if (res.ok) {
-        const data = await res.json();
-        setLibraries(data);
-      }
+      const data = getLibraries();
+      setLibraries(data);
     } catch (err) {
       console.error('Chyba při načítání knihoven:', err);
     } finally {
@@ -32,7 +30,7 @@ export default function LibrarySelectModal({ role, currentLibrary, onSelectLibra
     onSelectLibrary(lib);
   };
 
-  const handleCreate = async (e) => {
+  const handleCreate = (e) => {
     e.preventDefault();
     if (!newLibraryName.trim()) {
       setError('Zadejte název knihovny');
@@ -40,21 +38,10 @@ export default function LibrarySelectModal({ role, currentLibrary, onSelectLibra
     }
 
     try {
-      const res = await fetch('/api/libraries', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: newLibraryName.trim(),
-          google_sheet_url: googleSheetUrl.trim()
-        })
+      const created = saveLibrary({
+        name: newLibraryName.trim(),
+        google_sheet_url: googleSheetUrl.trim()
       });
-
-      if (!res.ok) {
-        const errData = await res.json();
-        throw new Error(errData.error || 'Chyba při vytváření knihovny');
-      }
-
-      const created = await res.json();
       onSelectLibrary(created);
     } catch (err) {
       setError(err.message);

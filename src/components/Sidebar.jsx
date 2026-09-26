@@ -1,5 +1,6 @@
 import React from 'react';
 import { X, Book, CheckCircle, Clock, Table, Library, ArrowLeftRight, Download, Filter } from 'lucide-react';
+import { exportLibraryCsv } from '../services/storage';
 
 export default function Sidebar({
   isOpen,
@@ -26,7 +27,7 @@ export default function Sidebar({
 
   const handleExportCsv = () => {
     if (currentLibrary) {
-      window.open(`/api/libraries/${currentLibrary.id}/export/csv`, '_blank');
+      exportLibraryCsv(currentLibrary);
     }
   };
 
