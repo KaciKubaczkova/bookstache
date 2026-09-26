@@ -7,7 +7,13 @@ import ScannerModal from './components/ScannerModal';
 import BookFormModal from './components/BookFormModal';
 import BookCard from './components/BookCard';
 import BookDetailModal from './components/BookDetailModal';
-import { Scan, BookPlus, Table, Sparkles, Filter, Library, Search } from 'lucide-react';
+import { Scan, BookPlus, Filter, Library } from 'lucide-react';
+import {
+  getBooks,
+  saveBook,
+  updateBook,
+  deleteBook
+} from './services/storage';
 
 export default function App() {
   const [role, setRole] = useState(null); // 'librarian' | 'reader' | null
@@ -37,15 +43,12 @@ export default function App() {
     }
   }, [currentLibrary]);
 
-  const fetchBooks = async () => {
+  const fetchBooks = () => {
     if (!currentLibrary) return;
     setLoadingBooks(true);
     try {
-      const res = await fetch(`/api/libraries/${currentLibrary.id}/books`);
-      if (res.ok) {
-        const data = await res.json();
-        setBooks(data);
-      }
+      const data = getBooks(currentLibrary.id);
+      setBooks(data);
     } catch (err) {
       console.error('Chyba při načítání knih:', err);
     } finally {
@@ -79,63 +82,36 @@ export default function App() {
   const handleSaveBook = async (formData) => {
     if (!currentLibrary) return;
     try {
-      let res;
       if (editingBook) {
-        // Update existing book
-        res = await fetch(`/api/books/${editingBook.id}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(formData)
-        });
+        updateBook(editingBook.id, formData);
       } else {
-        // Create new book
-        res = await fetch(`/api/libraries/${currentLibrary.id}/books`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(formData)
-        });
-      }
-
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || 'Uložení knihy selhalo');
+        saveBook(currentLibrary.id, formData);
       }
 
       setShowBookFormModal(false);
       setScannedBookData(null);
       setEditingBook(null);
-      await fetchBooks();
+      fetchBooks();
     } catch (err) {
       throw err;
     }
   };
 
-  const handleToggleStatus = async (book) => {
+  const handleToggleStatus = (book) => {
     const newStatus = book.status === 'Dostupná' ? 'Půjčená' : 'Dostupná';
     try {
-      const res = await fetch(`/api/books/${book.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: newStatus })
-      });
-
-      if (res.ok) {
-        await fetchBooks();
-      }
+      updateBook(book.id, { status: newStatus });
+      fetchBooks();
     } catch (err) {
       console.error('Chyba při změně stavu knihy:', err);
     }
   };
 
-  const handleDeleteBook = async (bookId) => {
+  const handleDeleteBook = (bookId) => {
     if (!window.confirm('Opravdu chcete tuto knihu smazat z knihovny?')) return;
     try {
-      const res = await fetch(`/api/books/${bookId}`, {
-        method: 'DELETE'
-      });
-      if (res.ok) {
-        await fetchBooks();
-      }
+      deleteBook(bookId);
+      fetchBooks();
     } catch (err) {
       console.error('Chyba při mazání knihy:', err);
     }
