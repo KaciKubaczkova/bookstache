@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Library, Plus, ArrowRight, Table, Search, X } from 'lucide-react';
-import { getLibraries, saveLibrary } from '../services/storage';
+import { fetchLibraries as fetchLibrariesFromFirestore, saveLibrary as saveLibraryToFirestore } from '../services/firestoreService';
 
 export default function LibrarySelectModal({ role, currentLibrary, onSelectLibrary }) {
   const [libraries, setLibraries] = useState([]);
@@ -12,13 +12,13 @@ export default function LibrarySelectModal({ role, currentLibrary, onSelectLibra
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchLibraries();
+    loadLibraries();
   }, []);
 
-  const fetchLibraries = () => {
+  const loadLibraries = async () => {
     setLoading(true);
     try {
-      const data = getLibraries();
+      const data = await fetchLibrariesFromFirestore();
       setLibraries(data);
     } catch (err) {
       console.error('Chyba při načítání knihoven:', err);
@@ -31,7 +31,7 @@ export default function LibrarySelectModal({ role, currentLibrary, onSelectLibra
     onSelectLibrary(lib);
   };
 
-  const handleCreate = (e) => {
+  const handleCreate = async (e) => {
     e.preventDefault();
     if (!newLibraryName.trim()) {
       setError('Zadejte název knihovny');
@@ -39,7 +39,7 @@ export default function LibrarySelectModal({ role, currentLibrary, onSelectLibra
     }
 
     try {
-      const created = saveLibrary({
+      const created = await saveLibraryToFirestore({
         name: newLibraryName.trim(),
         google_sheet_url: googleSheetUrl.trim()
       });

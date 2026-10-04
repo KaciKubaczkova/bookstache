@@ -40,7 +40,18 @@ function saveStoredBooks(books) {
 }
 
 export function getLibraries() {
-  return getStoredLibraries();
+  const libs = getStoredLibraries();
+  if (libs.length === 0) {
+    const defaultLib = {
+      id: 1,
+      name: 'Školní knihovna',
+      google_sheet_url: '',
+      created_at: new Date().toISOString()
+    };
+    saveStoredLibraries([defaultLib]);
+    return [defaultLib];
+  }
+  return libs;
 }
 
 export function saveLibrary({ name, google_sheet_url }) {
@@ -108,22 +119,6 @@ export function saveBook(libraryId, formData) {
   books.unshift(newBook);
   saveStoredBooks(books);
 
-  // Trigger Google Sheet Webhook if configured
-  if (library && library.google_sheet_url && library.google_sheet_url.startsWith('http')) {
-    try {
-      fetch(library.google_sheet_url, {
-        method: 'POST',
-        mode: 'no-cors',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newBook)
-      }).catch((err) =>
-        console.error('Chyba při odesílání knihy na Google Sheet Webhook:', err)
-      );
-    } catch (e) {
-      console.error(e);
-    }
-  }
-
   return newBook;
 }
 
@@ -167,7 +162,7 @@ export function exportLibraryCsv(library) {
 
   const libraryBooks = getBooks(library.id);
 
-  let csvContent = '\uFEFF'; // BOM for UTF-8 in Excel / Google Sheets
+  let csvContent = '\uFEFF';
   csvContent += 'ID;ISBN;Název;Autor;Rok vydání;Žánr;Věková skupina;Jazyk;Stav;Datum naskenování;Poznámky\n';
 
   for (const b of libraryBooks) {
