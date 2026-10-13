@@ -110,6 +110,19 @@ export default function App() {
     }
   };
 
+  const handleUpdateBookPartial = async (bookId, partialData) => {
+    try {
+      if (partialData.status !== undefined) {
+        await updateExemplarStatus(bookId, partialData.status);
+      } else {
+        await updateExemplarDetails(bookId, partialData);
+      }
+      fetchBooks();
+    } catch (err) {
+      console.error('Chyba při aktualizaci knihy z tabulky:', err);
+    }
+  };
+
   const handleToggleStatus = async (book) => {
     const newStatus = book.status === 'Dostupná' ? 'Půjčená' : 'Dostupná';
     try {
@@ -453,6 +466,8 @@ export default function App() {
         onClose={() => setShowTableModal(false)}
         library={currentLibrary}
         books={books}
+        role={role}
+        onUpdateBook={handleUpdateBookPartial}
         onExportExcel={() => exportLibraryToExcel(currentLibrary, books)}
         onExportCsv={() => exportLibraryCsv(currentLibrary)}
       />
