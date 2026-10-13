@@ -1,6 +1,7 @@
 import React from 'react';
 import { X, Book, CheckCircle, Clock, Table, Library, ArrowLeftRight, Download, Filter, Sparkles, User, LogIn } from 'lucide-react';
 import { exportLibraryCsv } from '../services/storage';
+import { exportLibraryToExcel } from '../services/exportService';
 import { useAuth } from '../context/AuthContext';
 
 export default function Sidebar({
@@ -17,6 +18,7 @@ export default function Sidebar({
   availableGenres = [],
   availableAgeGroups = [],
   currentLibrary,
+  allBooks = [],
   role,
   onChangeLibraryClick,
   onChangeRoleClick,
@@ -30,6 +32,14 @@ export default function Sidebar({
   const { currentUser, userProfile } = useAuth();
 
   if (!isOpen) return null;
+
+  const handleExportExcel = async () => {
+    if (currentLibrary) {
+      await exportLibraryToExcel(currentLibrary, allBooks);
+    } else {
+      alert('Nejprve vyberte knihovnu.');
+    }
+  };
 
   const handleExportCsv = () => {
     if (currentLibrary) {
@@ -250,15 +260,23 @@ export default function Sidebar({
           <div className="border-t border-[#d7ccc8] pt-4">
             <div className="text-xs font-bold text-[#7d5d42] uppercase tracking-wider mb-2 flex items-center space-x-1">
               <Table className="w-3.5 h-3.5" />
-              <span>Export dat</span>
+              <span>Export dat knihovny</span>
             </div>
 
             <button
-              onClick={handleExportCsv}
-              className="w-full text-left px-3 py-2.5 bg-[#efe6d5] hover:bg-[#e8ddc8] border border-[#a1887f] text-[#3a2212] rounded-xl font-semibold text-sm flex items-center space-x-2 transition-colors cursor-pointer"
+              onClick={handleExportExcel}
+              className="w-full text-left px-3 py-2.5 bg-[#8b2626] hover:bg-[#701e1e] text-white rounded-xl font-bold text-sm flex items-center space-x-2 transition-colors cursor-pointer shadow-xs mb-2"
             >
-              <Download className="w-4 h-4 text-[#8b2626]" />
-              <span>Stáhnout tabulku (CSV)</span>
+              <Download className="w-4 h-4 text-white" />
+              <span>Exportovat tabulku (Excel .xlsx)</span>
+            </button>
+
+            <button
+              onClick={handleExportCsv}
+              className="w-full text-left px-3 py-2 bg-[#f7f3ed] hover:bg-[#e8ddc8] border border-[#a1887f] text-[#3a2212] rounded-xl font-medium text-xs flex items-center space-x-2 transition-colors cursor-pointer"
+            >
+              <Download className="w-3.5 h-3.5 text-[#8b2626]" />
+              <span>Stáhnout v CSV</span>
             </button>
           </div>
         </div>
