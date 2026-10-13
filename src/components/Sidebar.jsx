@@ -27,7 +27,8 @@ export default function Sidebar({
   borrowedCount,
   activeTab,
   onSelectTab,
-  onOpenAuthModal
+  onOpenAuthModal,
+  onOpenTableModal
 }) {
   const { currentUser, userProfile } = useAuth();
 
@@ -256,19 +257,30 @@ export default function Sidebar({
             </div>
           </div>
 
-          {/* Export Section */}
+          {/* Table & Export Section */}
           <div className="border-t border-[#d7ccc8] pt-4">
             <div className="text-xs font-bold text-[#7d5d42] uppercase tracking-wider mb-2 flex items-center space-x-1">
               <Table className="w-3.5 h-3.5" />
-              <span>Export dat knihovny</span>
+              <span>Tabulka a Export knihovny</span>
             </div>
 
             <button
-              onClick={handleExportExcel}
+              onClick={() => {
+                onClose();
+                if (onOpenTableModal) onOpenTableModal();
+              }}
               className="w-full text-left px-3 py-2.5 bg-[#8b2626] hover:bg-[#701e1e] text-white rounded-xl font-bold text-sm flex items-center space-x-2 transition-colors cursor-pointer shadow-xs mb-2"
             >
-              <Download className="w-4 h-4 text-white" />
-              <span>Exportovat tabulku (Excel .xlsx)</span>
+              <Table className="w-4 h-4 text-white" />
+              <span>Otevřít tabulku v prohlížeči</span>
+            </button>
+
+            <button
+              onClick={handleExportExcel}
+              className="w-full text-left px-3 py-2 bg-[#f7f3ed] hover:bg-[#e8ddc8] border border-[#a1887f] text-[#3a2212] rounded-xl font-medium text-xs flex items-center space-x-2 transition-colors cursor-pointer mb-2"
+            >
+              <Download className="w-3.5 h-3.5 text-[#8b2626]" />
+              <span>Stáhnout v Excelu (.xlsx)</span>
             </button>
 
             <button

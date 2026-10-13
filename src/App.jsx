@@ -7,9 +7,12 @@ import ScannerModal from './components/ScannerModal';
 import BookFormModal from './components/BookFormModal';
 import BookCard from './components/BookCard';
 import BookDetailModal from './components/BookDetailModal';
+import TableModal from './components/TableModal';
 import AuthModal from './components/AuthModal';
 import VintedView from './components/VintedView';
-import { Scan, BookPlus, Filter, Library } from 'lucide-react';
+import { Scan, BookPlus, Filter, Library, Table as TableIcon } from 'lucide-react';
+import { exportLibraryToExcel } from './services/exportService';
+import { exportLibraryCsv } from './services/storage';
 import {
   fetchLibraryExemplars,
   saveLibraryExemplar,
@@ -28,6 +31,7 @@ export default function App() {
   const [showScannerModal, setShowScannerModal] = useState(false);
   const [showBookFormModal, setShowBookFormModal] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(false);
+  const [showTableModal, setShowTableModal] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
 
   const [scannedBookData, setScannedBookData] = useState(null);
@@ -256,8 +260,16 @@ export default function App() {
               </div>
             )}
 
-            {/* Active Filter Bar & Sorting */}
+            {/* Active Filter Bar & Sorting & Open Table Button */}
             <div className="flex flex-wrap items-center justify-between gap-3 pt-2 bg-[#efe6d5] p-3.5 rounded-2xl border border-[#d7ccc8]">
+              <button
+                onClick={() => setShowTableModal(true)}
+                className="px-3.5 py-1.5 bg-[#8b2626] hover:bg-[#701e1e] text-white text-xs font-bold rounded-xl flex items-center space-x-2 shadow-xs transition-colors cursor-pointer shrink-0"
+              >
+                <TableIcon className="w-4 h-4" />
+                <span>Otevřít tabulku</span>
+              </button>
+
               <div className="flex flex-wrap items-center gap-2 text-xs font-bold text-[#5c3a21]">
                 <Filter className="w-4 h-4 text-[#8b2626]" />
                 <span>Filtry:</span>
@@ -409,6 +421,7 @@ export default function App() {
         activeTab={activeTab}
         onSelectTab={setActiveTab}
         onOpenAuthModal={() => setShowAuthModal(true)}
+        onOpenTableModal={() => setShowTableModal(true)}
       />
 
       <ScannerModal
@@ -433,6 +446,15 @@ export default function App() {
         onToggleStatus={handleToggleStatus}
         onEdit={role === 'librarian' ? handleEditBookClick : null}
         onDelete={role === 'librarian' ? handleDeleteBook : null}
+      />
+
+      <TableModal
+        isOpen={showTableModal}
+        onClose={() => setShowTableModal(false)}
+        library={currentLibrary}
+        books={books}
+        onExportExcel={() => exportLibraryToExcel(currentLibrary, books)}
+        onExportCsv={() => exportLibraryCsv(currentLibrary)}
       />
 
       <AuthModal
