@@ -396,6 +396,7 @@ export default function App() {
         availableGenres={availableGenres}
         availableAgeGroups={availableAgeGroups}
         currentLibrary={currentLibrary}
+        allBooks={books}
         role={role}
         onChangeLibraryClick={() => setShowLibraryModal(true)}
         onChangeRoleClick={() => {
