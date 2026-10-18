@@ -46,7 +46,7 @@ export default function VintedView({ onOpenAuthModal, onOpenScanner, searchQuery
       const data = await fetchVintedExemplars();
       setItems(data);
     } catch (err) {
-      console.error('Chyba při načítání Knižního Vintedu:', err);
+      console.error('Chyba při načítání Sousedské výpůjčky:', err);
     } finally {
       setLoading(false);
     }
@@ -96,7 +96,7 @@ export default function VintedView({ onOpenAuthModal, onOpenScanner, searchQuery
   };
 
   const handleDeleteItem = async (itemId) => {
-    if (!window.confirm('Opravdu chcete tuto nabídku smazat z Knižního Vintedu?')) return;
+    if (!window.confirm('Opravdu chcete tuto nabídku smazat ze Sousedské výpůjčky?')) return;
     try {
       await deleteExemplar(itemId);
       loadVintedListings();
@@ -171,7 +171,7 @@ export default function VintedView({ onOpenAuthModal, onOpenScanner, searchQuery
               Sousedská výpůjčka knih
             </span>
             <h2 className="text-2xl font-serif font-bold text-[#3a2212]">
-              Knižní Vinted – Nabídky & Lidé v okolí
+              Sousedská výpůjčka – Nabídky & Lidé v okolí
             </h2>
             <p className="text-xs text-[#5c3a21] max-w-xl">
               Prohlížejte si knihy i sousedy v okolí zadáním lokality. Jako přihlášený uživatel můžete nabízet vlastní knížky do sousedské knihovny!

@@ -72,7 +72,7 @@ export default function ModeSelectModal({ onSelectMode }) {
             </div>
 
             <div className="flex items-center text-xs font-bold text-[#5c3a21] group-hover:translate-x-1 transition-transform">
-              <span>Prohlížet sousedství</span>
+              <span>Prohlížet nabídky</span>
               <ArrowRight className="w-4 h-4 ml-1" />
             </div>
           </button>
