@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import ModeSelectModal from './components/ModeSelectModal';
 import RoleSelect from './components/RoleSelect';
 import LibrarySelectModal from './components/LibrarySelectModal';
 import Navbar from './components/Navbar';
@@ -22,6 +23,7 @@ import {
 } from './services/firestoreService';
 
 export default function App() {
+  const [mainMode, setMainMode] = useState(null); // 'library' | 'vinted' | null
   const [role, setRole] = useState(null); // 'librarian' | 'reader' | null
   const [activeTab, setActiveTab] = useState('library'); // 'library' | 'vinted'
 
@@ -63,6 +65,18 @@ export default function App() {
       console.error('Chyba při načítání knih:', err);
     } finally {
       setLoadingBooks(false);
+    }
+  };
+
+  const handleSelectMode = (mode) => {
+    setMainMode(mode);
+    if (mode === 'vinted') {
+      setActiveTab('vinted');
+    } else {
+      setActiveTab('library');
+      if (!role) {
+        // Will render RoleSelect next
+      }
     }
   };
 
@@ -193,9 +207,27 @@ export default function App() {
   const availableCount = books.filter((b) => b.status === 'Dostupná').length;
   const borrowedCount = books.filter((b) => b.status === 'Půjčená').length;
 
-  // 1. Initial Role selection step
-  if (!role) {
-    return <RoleSelect onSelectRole={handleSelectRole} />;
+  // 1. Initial Mode selection step
+  if (!mainMode) {
+    return <ModeSelectModal onSelectMode={handleSelectMode} />;
+  }
+
+  // 2. Initial Role selection step if library mode selected
+  if (mainMode === 'library' && !role) {
+    return (
+      <div>
+        <div className="bg-[#efe6d5] border-b border-[#d7ccc8] p-3 text-center flex items-center justify-between max-w-md mx-auto rounded-b-2xl shadow-xs mt-0">
+          <button
+            onClick={() => setMainMode(null)}
+            className="text-xs font-bold text-[#8b2626] hover:underline cursor-pointer"
+          >
+            ← Zpět na výběr sekce
+          </button>
+          <span className="text-xs font-semibold text-[#5c3a21]">Katalog knihoven</span>
+        </div>
+        <RoleSelect onSelectRole={handleSelectRole} />
+      </div>
+    );
   }
 
   return (
@@ -427,6 +459,7 @@ export default function App() {
         onChangeRoleClick={() => {
           setRole(null);
           setCurrentLibrary(null);
+          setMainMode(null);
         }}
         totalCount={books.length}
         availableCount={availableCount}
