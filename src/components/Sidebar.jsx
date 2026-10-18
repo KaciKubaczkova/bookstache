@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Book, CheckCircle, Clock, Table, Library, ArrowLeftRight, Download, Filter, Sparkles, User, LogIn } from 'lucide-react';
+import { X, Book, CheckCircle, Clock, Table, Library, ArrowLeftRight, Download, Filter, Sparkles, User, LogIn, Settings, Trash2 } from 'lucide-react';
 import { exportLibraryCsv } from '../services/storage';
 import { exportLibraryToExcel } from '../services/exportService';
 import { useAuth } from '../context/AuthContext';
@@ -28,7 +28,8 @@ export default function Sidebar({
   activeTab,
   onSelectTab,
   onOpenAuthModal,
-  onOpenTableModal
+  onOpenTableModal,
+  onOpenEditLibrary
 }) {
   const { currentUser, userProfile } = useAuth();
 
@@ -84,7 +85,7 @@ export default function Sidebar({
                   {currentUser ? userProfile?.displayName || 'Přihlášený uživatel' : 'Host'}
                 </p>
                 <p className="text-[10px] text-[#5c3a21]">
-                  {currentUser ? userProfile?.location || 'Ostrava-Poruba' : 'Přihlaste se pro Knižní Vinted'}
+                  {currentUser ? userProfile?.location || 'Ostrava-Poruba' : 'Přihlaste se pro Sousedskou výpůjčku'}
                 </p>
               </div>
             </div>
@@ -100,7 +101,7 @@ export default function Sidebar({
           </div>
         </div>
 
-        {/* Navigation Tabs (Katalog vs Vinted) */}
+        {/* Navigation Tabs (Katalog vs Výpůjčka) */}
         <div className="p-3 border-b border-[#d7ccc8] bg-[#f7f3ed] flex space-x-2">
           <button
             onClick={() => {
@@ -129,7 +130,7 @@ export default function Sidebar({
             }`}
           >
             <Sparkles className="w-4 h-4 text-amber-300" />
-            <span>Knižní Vinted</span>
+            <span>Sousedská výpůjčka</span>
           </button>
         </div>
 
@@ -293,8 +294,28 @@ export default function Sidebar({
           </div>
         </div>
 
+        {/* Librarian Management Section */}
+        {role === 'librarian' && currentLibrary && activeTab === 'library' && (
+          <div className="p-4 bg-[#e8ddc8] border-t border-[#d7ccc8]">
+            <div className="text-xs font-bold text-[#7d5d42] uppercase tracking-wider mb-2 flex items-center space-x-1">
+              <Settings className="w-3.5 h-3.5" />
+              <span>Správa akt. knihovny</span>
+            </div>
+            <button
+              onClick={() => {
+                onClose();
+                if (onOpenEditLibrary) onOpenEditLibrary();
+              }}
+              className="w-full py-2 px-3 bg-[#8b2626] hover:bg-[#701e1e] text-white rounded-xl text-xs font-bold flex items-center justify-center space-x-2 transition-colors cursor-pointer shadow-xs"
+            >
+              <Settings className="w-3.5 h-3.5" />
+              <span>Upravit / Smazat knihovnu</span>
+            </button>
+          </div>
+        )}
+
         {/* Footer Role Switcher */}
-        <div className="p-4 bg-[#e8ddc8] border-t border-[#d7ccc8]">
+        <div className="p-4 bg-[#efe6d5] border-t border-[#d7ccc8]">
           <div className="flex items-center justify-between text-xs text-[#5c3a21] mb-2 font-semibold">
             <span>Aktivní režim:</span>
             <span className="px-2 py-0.5 bg-[#8b2626] text-white rounded font-bold">

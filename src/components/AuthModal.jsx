@@ -106,7 +106,7 @@ export default function AuthModal({ isOpen, onClose }) {
             </h2>
             <p className="text-xs text-[#5c3a21]">
               {mode === 'profile'
-                ? 'Upravte své kontaktní údaje pro Knižní Vinted'
+                ? 'Upravte své kontaktní údaje pro Sousedskou výpůjčku'
                 : mode === 'register'
                 ? 'Vytvořte si účet pro nabízení a půjčování knih'
                 : 'Přihlaste se ke svému účtu'}
@@ -131,7 +131,7 @@ export default function AuthModal({ isOpen, onClose }) {
           {mode === 'profile' && currentUser && (
             <div className="bg-[#efe6d5] p-3 rounded-xl text-xs text-[#3a2212] space-y-1 border border-[#d7ccc8]">
               <p><span className="font-semibold text-[#5c3a21]">E-mail:</span> {currentUser.email}</p>
-              <p className="text-[11px] text-[#8b2626] italic">Tento e-mail se zobrazí zájemcům o vaše knihy v Knižním Vinted.</p>
+              <p className="text-[11px] text-[#8b2626] italic">Tento e-mail se zobrazí zájemcům o vaše knihy v Sousedské výpůjčce.</p>
             </div>
           )}
 

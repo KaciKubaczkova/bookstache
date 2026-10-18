@@ -1,15 +1,22 @@
 import React, { useState, useEffect } from 'react';
-import { Library, Plus, ArrowRight, Table, Search, X } from 'lucide-react';
-import { fetchLibraries as fetchLibrariesFromFirestore, saveLibrary as saveLibraryToFirestore } from '../services/firestoreService';
+import { Library, Plus, ArrowRight, Table, Search, X, Lock, KeyRound } from 'lucide-react';
+import { fetchLibraries as fetchLibrariesFromFirestore, saveLibrary as saveLibraryToFirestore, updateLibraryDetails } from '../services/firestoreService';
 
-export default function LibrarySelectModal({ role, currentLibrary, onSelectLibrary }) {
+export default function LibrarySelectModal({ role, currentLibrary, onSelectLibrary, onAccessDenied }) {
   const [libraries, setLibraries] = useState([]);
   const [newLibraryName, setNewLibraryName] = useState('');
   const [googleSheetUrl, setGoogleSheetUrl] = useState('');
+  const [newLibraryPassword, setNewLibraryPassword] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [isCreating, setIsCreating] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
+
+  // Password verification state
+  const [pendingLibrary, setPendingLibrary] = useState(null);
+  const [inputPassword, setInputPassword] = useState('');
+  const [failedAttempts, setFailedAttempts] = useState(0);
+  const [settingFirstPassword, setSettingFirstPassword] = useState(false);
 
   useEffect(() => {
     loadLibraries();
@@ -28,7 +35,63 @@ export default function LibrarySelectModal({ role, currentLibrary, onSelectLibra
   };
 
   const handleSelect = (lib) => {
-    onSelectLibrary(lib);
+    if (role === 'librarian') {
+      if (lib.password) {
+        setPendingLibrary(lib);
+        setInputPassword('');
+        setFailedAttempts(0);
+        setError('');
+      } else {
+        // Library has no password set yet, require setting one now
+        setPendingLibrary(lib);
+        setSettingFirstPassword(true);
+        setInputPassword('');
+        setError('');
+      }
+    } else {
+      onSelectLibrary(lib);
+    }
+  };
+
+  const handleVerifyPassword = (e) => {
+    e.preventDefault();
+    if (!pendingLibrary) return;
+
+    if (inputPassword === pendingLibrary.password) {
+      onSelectLibrary(pendingLibrary);
+      setPendingLibrary(null);
+    } else {
+      const attempts = failedAttempts + 1;
+      setFailedAttempts(attempts);
+      if (attempts >= 3) {
+        alert('Omlouváme se, nemáte přístup k této knihovně.');
+        setPendingLibrary(null);
+        if (onAccessDenied) {
+          onAccessDenied();
+        }
+      } else {
+        setError(`Nesprávné heslo! Zbývá pokusů: ${3 - attempts}`);
+        setInputPassword('');
+      }
+    }
+  };
+
+  const handleSetFirstPassword = async (e) => {
+    e.preventDefault();
+    if (!inputPassword.trim()) {
+      setError('Zadejte heslo pro knihovnu');
+      return;
+    }
+
+    try {
+      await updateLibraryDetails(pendingLibrary.id, { password: inputPassword.trim() });
+      const updatedLib = { ...pendingLibrary, password: inputPassword.trim() };
+      onSelectLibrary(updatedLib);
+      setPendingLibrary(null);
+      setSettingFirstPassword(false);
+    } catch (err) {
+      setError(err.message || 'Chyba při ukládání hesla');
+    }
   };
 
   const handleCreate = async (e) => {
@@ -37,11 +100,16 @@ export default function LibrarySelectModal({ role, currentLibrary, onSelectLibra
       setError('Zadejte název knihovny');
       return;
     }
+    if (!newLibraryPassword.trim()) {
+      setError('Zadejte heslo pro knihovnu');
+      return;
+    }
 
     try {
       const created = await saveLibraryToFirestore({
         name: newLibraryName.trim(),
-        google_sheet_url: googleSheetUrl.trim()
+        google_sheet_url: googleSheetUrl.trim(),
+        password: newLibraryPassword.trim()
       });
       onSelectLibrary(created);
     } catch (err) {
@@ -146,6 +214,109 @@ export default function LibrarySelectModal({ role, currentLibrary, onSelectLibra
           )}
         </div>
 
+        {/* Password Verification Modal / Overlay */}
+        {pendingLibrary && (
+          <div className="fixed inset-0 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4 z-60">
+            <div className="bg-[#f7f3ed] border-2 border-[#8b2626] rounded-2xl max-w-sm w-full p-6 shadow-2xl relative">
+              <button
+                onClick={() => setPendingLibrary(null)}
+                className="absolute top-3 right-3 text-[#a1887f] hover:text-[#3a2212] p-1 rounded-full cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+
+              <div className="text-center mb-4">
+                <div className="p-3 bg-[#8b2626]/10 text-[#8b2626] rounded-2xl inline-block mb-2">
+                  <Lock className="w-8 h-8" />
+                </div>
+                <h3 className="font-serif font-bold text-lg text-[#3a2212]">
+                  {settingFirstPassword ? 'Zabezpečit knihovnu' : 'Zadejte heslo knihovny'}
+                </h3>
+                <p className="text-xs text-[#5c3a21] mt-1">
+                  Knihovna: <strong className="text-[#8b2626]">{pendingLibrary.name}</strong>
+                </p>
+                {settingFirstPassword && (
+                  <p className="text-[11px] text-[#8b2626] mt-1 font-semibold">
+                    Tato knihovna ještě nemá heslo. Jako knihovník pro ni prosím zvolte heslo.
+                  </p>
+                )}
+              </div>
+
+              {error && (
+                <div className="bg-red-100 border border-red-300 text-red-800 text-xs p-2.5 rounded-xl mb-3 text-center font-bold">
+                  {error}
+                </div>
+              )}
+
+              {settingFirstPassword ? (
+                <form onSubmit={handleSetFirstPassword} className="space-y-3">
+                  <div>
+                    <label className="block text-xs font-bold text-[#5c3a21] mb-1">
+                      Nové heslo knihovny
+                    </label>
+                    <input
+                      type="password"
+                      value={inputPassword}
+                      onChange={(e) => setInputPassword(e.target.value)}
+                      placeholder="••••••••"
+                      className="w-full p-2.5 text-sm bg-[#efe6d5] border border-[#a1887f] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#8b2626] text-[#3a2212]"
+                      required
+                      autoFocus
+                    />
+                  </div>
+                  <div className="flex space-x-2 pt-1">
+                    <button
+                      type="submit"
+                      className="flex-1 bg-[#8b2626] hover:bg-[#701e1e] text-white py-2.5 rounded-xl font-bold text-xs shadow-md cursor-pointer"
+                    >
+                      Uložit heslo a vstoupit
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPendingLibrary(null)}
+                      className="px-3 py-2.5 bg-[#d7ccc8] text-[#3a2212] rounded-xl text-xs font-bold cursor-pointer"
+                    >
+                      Zrušit
+                    </button>
+                  </div>
+                </form>
+              ) : (
+                <form onSubmit={handleVerifyPassword} className="space-y-3">
+                  <div>
+                    <label className="block text-xs font-bold text-[#5c3a21] mb-1">
+                      Heslo knihovníka
+                    </label>
+                    <input
+                      type="password"
+                      value={inputPassword}
+                      onChange={(e) => setInputPassword(e.target.value)}
+                      placeholder="••••••••"
+                      className="w-full p-2.5 text-sm bg-[#efe6d5] border border-[#a1887f] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#8b2626] text-[#3a2212]"
+                      required
+                      autoFocus
+                    />
+                  </div>
+                  <div className="flex space-x-2 pt-1">
+                    <button
+                      type="submit"
+                      className="flex-1 bg-[#8b2626] hover:bg-[#701e1e] text-white py-2.5 rounded-xl font-bold text-xs shadow-md cursor-pointer"
+                    >
+                      Potvrdit heslo
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPendingLibrary(null)}
+                      className="px-3 py-2.5 bg-[#d7ccc8] text-[#3a2212] rounded-xl text-xs font-bold cursor-pointer"
+                    >
+                      Zrušit
+                    </button>
+                  </div>
+                </form>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Create Library section for Librarian or option */}
         {role === 'librarian' && (
           <div className="border-t border-[#d7ccc8] pt-4">
@@ -169,6 +340,19 @@ export default function LibrarySelectModal({ role, currentLibrary, onSelectLibra
                     value={newLibraryName}
                     onChange={(e) => setNewLibraryName(e.target.value)}
                     placeholder="např. Městská knihovna Praha"
+                    className="w-full p-2.5 text-sm bg-[#f7f3ed] border border-[#a1887f] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#8b2626]"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-[#5c3a21] mb-1">
+                    Heslo knihovny (pro přihlášení knihovníka) *
+                  </label>
+                  <input
+                    type="password"
+                    value={newLibraryPassword}
+                    onChange={(e) => setNewLibraryPassword(e.target.value)}
+                    placeholder="••••••••"
                     className="w-full p-2.5 text-sm bg-[#f7f3ed] border border-[#a1887f] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#8b2626]"
                     required
                   />

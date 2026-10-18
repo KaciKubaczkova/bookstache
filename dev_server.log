@@ -1,0 +1,18 @@
+
+> knihovnicka-app@1.0.0 dev
+> concurrently "npm run server" "npm run client"
+
+[0]
+[0] > knihovnicka-app@1.0.0 server
+[0] > node server/index.mjs
+[0]
+[1]
+[1] > knihovnicka-app@1.0.0 client
+[1] > vite --host
+[1]
+[0] Server listening on http://localhost:3001
+[1]
+[1]   VITE v6.4.3  ready in 481 ms
+[1]
+[1]   ➜  Local:   http://localhost:3000/
+[1]   ➜  Network: http://192.168.0.2:3000/

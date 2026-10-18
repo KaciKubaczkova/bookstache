@@ -54,7 +54,7 @@ export function getLibraries() {
   return libs;
 }
 
-export function saveLibrary({ name, google_sheet_url }) {
+export function saveLibrary({ name, google_sheet_url, password }) {
   if (!name || !name.trim()) {
     throw new Error('Název knihovny je povinný');
   }
@@ -69,8 +69,11 @@ export function saveLibrary({ name, google_sheet_url }) {
   if (existing) {
     if (google_sheet_url !== undefined) {
       existing.google_sheet_url = google_sheet_url.trim();
-      saveStoredLibraries(libraries);
     }
+    if (password !== undefined) {
+      existing.password = password.trim();
+    }
+    saveStoredLibraries(libraries);
     return existing;
   }
 
@@ -78,12 +81,45 @@ export function saveLibrary({ name, google_sheet_url }) {
     id: Date.now(),
     name: cleanName,
     google_sheet_url: (google_sheet_url || '').trim(),
+    password: (password || '').trim(),
     created_at: new Date().toISOString()
   };
 
   libraries.push(newLibrary);
   saveStoredLibraries(libraries);
   return newLibrary;
+}
+
+export function updateLibrary(libraryId, { name, google_sheet_url, password }) {
+  const libraries = getStoredLibraries();
+  const index = libraries.findIndex((l) => String(l.id) === String(libraryId));
+
+  if (index === -1) {
+    throw new Error('Knihovna nenalezena');
+  }
+
+  const existing = libraries[index];
+  const updated = {
+    ...existing,
+    name: name !== undefined ? name.trim() : existing.name,
+    google_sheet_url: google_sheet_url !== undefined ? google_sheet_url.trim() : existing.google_sheet_url,
+    password: password !== undefined ? password.trim() : existing.password
+  };
+
+  libraries[index] = updated;
+  saveStoredLibraries(libraries);
+  return updated;
+}
+
+export function deleteLibrary(libraryId) {
+  const libraries = getStoredLibraries();
+  const filteredLibs = libraries.filter((l) => String(l.id) !== String(libraryId));
+  saveStoredLibraries(filteredLibs);
+
+  const books = getStoredBooks();
+  const filteredBooks = books.filter((b) => String(b.library_id) !== String(libraryId));
+  saveStoredBooks(filteredBooks);
+  return true;
 }
 
 export function getBooks(libraryId) {

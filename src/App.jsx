@@ -11,6 +11,7 @@ import BookDetailModal from './components/BookDetailModal';
 import TableModal from './components/TableModal';
 import AuthModal from './components/AuthModal';
 import VintedView from './components/VintedView';
+import EditLibraryModal from './components/EditLibraryModal';
 import { Scan, BookPlus, Filter, Library, Table as TableIcon } from 'lucide-react';
 import { exportLibraryToExcel } from './services/exportService';
 import { exportLibraryCsv } from './services/storage';
@@ -35,6 +36,7 @@ export default function App() {
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [showTableModal, setShowTableModal] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [showEditLibraryModal, setShowEditLibraryModal] = useState(false);
 
   const [scannedBookData, setScannedBookData] = useState(null);
   const [editingBook, setEditingBook] = useState(null);
@@ -436,6 +438,12 @@ export default function App() {
           role={role}
           currentLibrary={currentLibrary}
           onSelectLibrary={handleSelectLibrary}
+          onAccessDenied={() => {
+            setShowLibraryModal(false);
+            setRole(null);
+            setCurrentLibrary(null);
+            setMainMode(null);
+          }}
         />
       )}
 
@@ -468,6 +476,7 @@ export default function App() {
         onSelectTab={setActiveTab}
         onOpenAuthModal={() => setShowAuthModal(true)}
         onOpenTableModal={() => setShowTableModal(true)}
+        onOpenEditLibrary={() => setShowEditLibraryModal(true)}
       />
 
       <ScannerModal
@@ -508,6 +517,20 @@ export default function App() {
       <AuthModal
         isOpen={showAuthModal}
         onClose={() => setShowAuthModal(false)}
+      />
+
+      <EditLibraryModal
+        isOpen={showEditLibraryModal}
+        onClose={() => setShowEditLibraryModal(false)}
+        currentLibrary={currentLibrary}
+        onLibraryUpdated={(updatedLib) => {
+          setCurrentLibrary(updatedLib);
+        }}
+        onLibraryDeleted={() => {
+          setCurrentLibrary(null);
+          setBooks([]);
+          setShowLibraryModal(true);
+        }}
       />
     </div>
   );

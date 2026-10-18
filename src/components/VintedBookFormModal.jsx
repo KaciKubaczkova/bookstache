@@ -151,7 +151,7 @@ export default function VintedBookFormModal({
               {initialData ? 'Upravit nabídku knihy' : 'Nabídnout knihu k půjčení'}
             </h2>
             <p className="text-xs text-[#5c3a21]">
-              Knižní Vinted • Lokalita: <span className="font-semibold text-[#8b2626]">{userProfile?.location || 'Ostrava-Poruba'}</span>
+              Sousedská výpůjčka • Lokalita: <span className="font-semibold text-[#8b2626]">{userProfile?.location || 'Ostrava-Poruba'}</span>
             </p>
           </div>
         </div>

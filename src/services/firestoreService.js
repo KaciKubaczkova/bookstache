@@ -106,9 +106,9 @@ export async function fetchLibraries() {
   }
 }
 
-export async function saveLibrary({ name, google_sheet_url, ownerId }) {
+export async function saveLibrary({ name, google_sheet_url, password, ownerId }) {
   if (!isFirebaseConfigured) {
-    return localStorageService.saveLibrary({ name, google_sheet_url });
+    return localStorageService.saveLibrary({ name, google_sheet_url, password });
   }
 
   const cleanName = (name || '').trim();
@@ -120,17 +120,19 @@ export async function saveLibrary({ name, google_sheet_url, ownerId }) {
 
     if (!snap.empty) {
       const existing = snap.docs[0];
-      if (google_sheet_url !== undefined) {
-        await updateDoc(doc(db, LIBRARIES_COL, existing.id), {
-          google_sheet_url: google_sheet_url.trim()
-        });
+      const updates = {};
+      if (google_sheet_url !== undefined) updates.google_sheet_url = google_sheet_url.trim();
+      if (password !== undefined) updates.password = password.trim();
+      if (Object.keys(updates).length > 0) {
+        await updateDoc(doc(db, LIBRARIES_COL, existing.id), updates);
       }
-      return { id: existing.id, ...existing.data(), google_sheet_url };
+      return { id: existing.id, ...existing.data(), ...updates };
     }
 
     const newLib = {
       name: cleanName,
       google_sheet_url: (google_sheet_url || '').trim(),
+      password: (password || '').trim(),
       ownerId: ownerId || '',
       createdAt: new Date().toISOString()
     };
@@ -139,7 +141,53 @@ export async function saveLibrary({ name, google_sheet_url, ownerId }) {
     return { id: docRef.id, ...newLib };
   } catch (err) {
     console.error('Chyba při ukládání knihovny do Firestore:', err);
-    return localStorageService.saveLibrary({ name, google_sheet_url });
+    return localStorageService.saveLibrary({ name, google_sheet_url, password });
+  }
+}
+
+export async function updateLibraryDetails(libraryId, { name, google_sheet_url, password }) {
+  if (!isFirebaseConfigured) {
+    return localStorageService.updateLibrary(libraryId, { name, google_sheet_url, password });
+  }
+
+  try {
+    const docRef = doc(db, LIBRARIES_COL, String(libraryId));
+    const updates = {};
+    if (name !== undefined) updates.name = name.trim();
+    if (google_sheet_url !== undefined) updates.google_sheet_url = google_sheet_url.trim();
+    if (password !== undefined) updates.password = password.trim();
+
+    await updateDoc(docRef, updates);
+    return true;
+  } catch (err) {
+    console.error('Chyba při úpravě knihovny:', err);
+    return localStorageService.updateLibrary(libraryId, { name, google_sheet_url, password });
+  }
+}
+
+export async function deleteLibraryAndExemplars(libraryId) {
+  if (!isFirebaseConfigured) {
+    return localStorageService.deleteLibrary(libraryId);
+  }
+
+  try {
+    // Delete library doc
+    await deleteDoc(doc(db, LIBRARIES_COL, String(libraryId)));
+
+    // Delete exemplars belonging to this library
+    const q = query(
+      collection(db, EXEMPLARS_COL),
+      where('ownerId', '==', String(libraryId)),
+      where('ownerType', '==', 'library')
+    );
+    const snap = await getDocs(q);
+    for (const docSnap of snap.docs) {
+      await deleteDoc(doc(db, EXEMPLARS_COL, docSnap.id));
+    }
+    return true;
+  } catch (err) {
+    console.error('Chyba při mazání knihovny a jejích exemplářů:', err);
+    return localStorageService.deleteLibrary(libraryId);
   }
 }
 

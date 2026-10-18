@@ -74,7 +74,7 @@ export default function Navbar({
             }`}
           >
             <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-            <span>Knižní Vinted</span>
+            <span>Sousedská výpůjčka</span>
           </button>
         </div>
 
