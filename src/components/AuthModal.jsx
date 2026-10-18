@@ -67,6 +67,8 @@ export default function AuthModal({ isOpen, onClose }) {
         msg = 'Heslo musí mít alespoň 6 znaků.';
       } else if (msg.includes('auth/invalid-email')) {
         msg = 'Zadejte platnou e-mailovou adresu.';
+      } else if (msg.includes('api-key-not-valid') || msg.includes('invalid-api-key') || msg.includes('auth/invalid-app-credential')) {
+        msg = 'Služba pro online přihlášení Firebase není správně nakonfigurována (neplatný API klíč). Návod na nastavení naleznete v souboru README.md.';
       }
       setError(msg);
     } finally {

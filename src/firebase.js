@@ -19,10 +19,23 @@ const firebaseConfig = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID || '1:1234567890:web:1234567890'
 };
 
+const isPlaceholder = (val) => {
+  if (!val) return true;
+  const lower = val.trim().toLowerCase();
+  return (
+    lower === '' ||
+    lower.includes('your_') ||
+    lower.includes('demo') ||
+    lower.includes('placeholder') ||
+    lower === '1234567890'
+  );
+};
+
 export const isFirebaseConfigured = Boolean(
   import.meta.env.VITE_FIREBASE_API_KEY &&
   import.meta.env.VITE_FIREBASE_PROJECT_ID &&
-  import.meta.env.VITE_FIREBASE_API_KEY !== 'demo-key'
+  !isPlaceholder(import.meta.env.VITE_FIREBASE_API_KEY) &&
+  !isPlaceholder(import.meta.env.VITE_FIREBASE_PROJECT_ID)
 );
 
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
