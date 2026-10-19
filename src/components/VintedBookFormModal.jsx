@@ -16,8 +16,22 @@ export default function VintedBookFormModal({
   const [author, setAuthor] = useState('');
   const [genre, setGenre] = useState('');
   const [year, setYear] = useState('');
+  const MAIN_LANGUAGES = [
+    'Angličtina',
+    'Čeština',
+    'Francouzština',
+    'Italština',
+    'Němčina',
+    'Polština',
+    'Ruština',
+    'Slovenština',
+    'Španělština'
+  ];
+
   const [targetAge, setTargetAge] = useState('Všechny věkové kategorie');
   const [language, setLanguage] = useState('Čeština');
+  const [selectedLanguageOption, setSelectedLanguageOption] = useState('Čeština');
+  const [customLanguage, setCustomLanguage] = useState('');
   const [status, setStatus] = useState('Dostupná k půjčení');
   const [lendingTerms, setLendingTerms] = useState('');
   const [notes, setNotes] = useState('');
@@ -31,13 +45,23 @@ export default function VintedBookFormModal({
 
   useEffect(() => {
     if (initialData) {
+      const lang = initialData.language || 'Čeština';
+      const isMainLang = MAIN_LANGUAGES.includes(lang);
+
       setIsbn(initialData.isbn || '');
       setTitle(initialData.title || '');
       setAuthor(initialData.author || '');
       setGenre(initialData.genre || '');
       setYear(initialData.year || '');
       setTargetAge(initialData.target_age || 'Všechny věkové kategorie');
-      setLanguage(initialData.language || 'Čeština');
+      setLanguage(lang);
+      if (isMainLang) {
+        setSelectedLanguageOption(lang);
+        setCustomLanguage('');
+      } else {
+        setSelectedLanguageOption('ADD_OTHER');
+        setCustomLanguage(lang);
+      }
       setStatus(initialData.status || 'Dostupná k půjčení');
       setLendingTerms(initialData.lendingTerms || '');
       setNotes(initialData.notes || '');
@@ -51,6 +75,8 @@ export default function VintedBookFormModal({
       setYear('');
       setTargetAge('Všechny věkové kategorie');
       setLanguage('Čeština');
+      setSelectedLanguageOption('Čeština');
+      setCustomLanguage('');
       setStatus('Dostupná k půjčení');
       setLendingTerms('Půjčím na 1 měsíc zdarma, osobní předání.');
       setNotes('');
@@ -58,6 +84,22 @@ export default function VintedBookFormModal({
       setCoverFile(null);
     }
   }, [initialData, isOpen]);
+
+  const handleLanguageSelectChange = (e) => {
+    const val = e.target.value;
+    setSelectedLanguageOption(val);
+    if (val === 'ADD_OTHER') {
+      setLanguage(customLanguage);
+    } else {
+      setLanguage(val);
+    }
+  };
+
+  const handleCustomLanguageChange = (e) => {
+    const val = e.target.value;
+    setCustomLanguage(val);
+    setLanguage(val);
+  };
 
   if (!isOpen) return null;
 
@@ -73,6 +115,16 @@ export default function VintedBookFormModal({
         if (data.genre) setGenre(data.genre);
         if (data.year) setYear(data.year);
         if (data.coverUrl) setCoverUrl(data.coverUrl);
+        if (data.language) {
+          setLanguage(data.language);
+          if (MAIN_LANGUAGES.includes(data.language)) {
+            setSelectedLanguageOption(data.language);
+            setCustomLanguage('');
+          } else {
+            setSelectedLanguageOption('ADD_OTHER');
+            setCustomLanguage(data.language);
+          }
+        }
       } else {
         setLookupError('Kniha nebyla v online databázích nalezena. Vyplňte údaje ručně.');
       }
@@ -229,6 +281,49 @@ export default function VintedBookFormModal({
                 placeholder="Např. Fantasy, Detektivka..."
                 className="w-full px-3 py-2 bg-[#efe6d5] border border-[#a1887f] rounded-xl text-xs text-[#3a2212] focus:outline-none focus:ring-2 focus:ring-[#8b2626]"
               />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-bold text-[#3a2212] mb-1">Jazyk</label>
+              <select
+                value={selectedLanguageOption}
+                onChange={handleLanguageSelectChange}
+                className="w-full px-3 py-2 bg-[#efe6d5] border border-[#a1887f] rounded-xl text-xs text-[#3a2212] focus:outline-none focus:ring-2 focus:ring-[#8b2626] font-semibold"
+              >
+                {MAIN_LANGUAGES.map((lang) => (
+                  <option key={lang} value={lang}>
+                    {lang}
+                  </option>
+                ))}
+                <option value="ADD_OTHER">+ přidat další</option>
+              </select>
+
+              {selectedLanguageOption === 'ADD_OTHER' && (
+                <input
+                  type="text"
+                  value={customLanguage}
+                  onChange={handleCustomLanguageChange}
+                  placeholder="Zadejte vlastní jazyk..."
+                  className="w-full mt-2 px-3 py-2 bg-[#efe6d5] border border-[#a1887f] rounded-xl text-xs text-[#3a2212] focus:outline-none focus:ring-2 focus:ring-[#8b2626]"
+                  autoFocus
+                />
+              )}
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-[#3a2212] mb-1">Cílová věková skupina</label>
+              <select
+                value={targetAge}
+                onChange={(e) => setTargetAge(e.target.value)}
+                className="w-full px-3 py-2 bg-[#efe6d5] border border-[#a1887f] rounded-xl text-xs text-[#3a2212] focus:outline-none focus:ring-2 focus:ring-[#8b2626] font-semibold"
+              >
+                <option value="Děti (0-12 let)">Děti (0-12 let)</option>
+                <option value="Mládež (12-18 let)">Mládež (12-18 let)</option>
+                <option value="Dospělí">Dospělí</option>
+                <option value="Všechny věkové kategorie">Všechny věkové kategorie</option>
+              </select>
             </div>
           </div>
 

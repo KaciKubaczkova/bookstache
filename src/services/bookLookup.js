@@ -1,5 +1,20 @@
 // Client-side book lookup using Google Books API & Open Library API
 
+function mapLanguageCode(lang) {
+  if (!lang) return '';
+  const l = String(lang).toLowerCase().trim();
+  if (l.includes('eng') || l === 'en' || l.includes('english') || l.includes('angličtina')) return 'Angličtina';
+  if (l.includes('cze') || l.includes('ces') || l === 'cs' || l.includes('czech') || l.includes('čeština')) return 'Čeština';
+  if (l.includes('slo') || l.includes('slk') || l === 'sk' || l.includes('slovak') || l.includes('slovenština')) return 'Slovenština';
+  if (l.includes('ger') || l.includes('deu') || l === 'de' || l.includes('german') || l.includes('němčina')) return 'Němčina';
+  if (l.includes('fre') || l.includes('fra') || l === 'fr' || l.includes('french') || l.includes('francouzština')) return 'Francouzština';
+  if (l.includes('ita') || l === 'it' || l.includes('italian') || l.includes('italština')) return 'Italština';
+  if (l.includes('pol') || l === 'pl' || l.includes('polish') || l.includes('polština')) return 'Polština';
+  if (l.includes('rus') || l === 'ru' || l.includes('russian') || l.includes('ruština')) return 'Ruština';
+  if (l.includes('spa') || l === 'es' || l.includes('spanish') || l.includes('španělština')) return 'Španělština';
+  return l.toUpperCase();
+}
+
 export async function lookupBookByIsbnOrTitle(query) {
   if (!query || !query.trim()) {
     throw new Error('Zadejte ISBN kód nebo název knihy');
@@ -16,11 +31,46 @@ export async function lookupBookByIsbnOrTitle(query) {
     year: '',
     genre: '',
     target_age: '',
-    language: 'Čeština',
+    language: '',
     notes: ''
   };
 
-  // 1. Try Google Books API
+  // 1. Try Knihovny.cz API (VuFind API)
+  let knihovnyData = null;
+  try {
+    const qParam = isIsbn ? `lookfor=${isbnClean}&type=ISN` : `lookfor=${encodeURIComponent(cleanQuery)}&type=AllFields`;
+    const res = await fetch(`https://www.knihovny.cz/api/v1/search?${qParam}&limit=5`, {
+      headers: { 'Accept': 'application/json' }
+    });
+    if (res.ok) {
+      knihovnyData = await res.json();
+    }
+  } catch (err) {
+    console.warn('Knihovny.cz API selhalo nebo vypršelo:', err);
+  }
+
+  if (knihovnyData && knihovnyData.records && knihovnyData.records.length > 0) {
+    const rec = knihovnyData.records[0];
+    bookInfo.title = rec.title || rec.shortTitle || '';
+    if (rec.authors) {
+      if (rec.authors.primary) {
+        bookInfo.author = Object.keys(rec.authors.primary).join(', ');
+      } else if (Array.isArray(rec.authors)) {
+        bookInfo.author = rec.authors.join(', ');
+      }
+    }
+    if (rec.publishDate && Array.isArray(rec.publishDate) && rec.publishDate.length > 0) {
+      bookInfo.year = String(rec.publishDate[0]);
+    }
+    if (rec.languages && rec.languages.length > 0) {
+      bookInfo.language = mapLanguageCode(rec.languages[0]);
+    }
+    if (rec.genres && Array.isArray(rec.genres) && rec.genres.length > 0) {
+      bookInfo.genre = rec.genres.slice(0, 3).join(', ');
+    }
+  }
+
+  // 2. Try Google Books API
   let googleData = null;
   try {
     const qParam = isIsbn ? `isbn:${isbnClean}` : encodeURIComponent(cleanQuery);
@@ -69,20 +119,24 @@ export async function lookupBookByIsbnOrTitle(query) {
   // Parse Google Books response
   if (googleData && googleData.items && googleData.items.length > 0) {
     const item = googleData.items[0].volumeInfo;
-    bookInfo.title = item.title || '';
-    if (item.subtitle) {
-      bookInfo.title += `: ${item.subtitle}`;
+    if (!bookInfo.title) {
+      bookInfo.title = item.title || '';
+      if (item.subtitle) {
+        bookInfo.title += `: ${item.subtitle}`;
+      }
     }
-    bookInfo.author = item.authors ? item.authors.join(', ') : '';
-    bookInfo.year = item.publishedDate ? item.publishedDate.substring(0, 4) : '';
-    bookInfo.genre = item.categories ? item.categories.join(', ') : '';
+    if (!bookInfo.author) {
+      bookInfo.author = item.authors ? item.authors.join(', ') : '';
+    }
+    if (!bookInfo.year) {
+      bookInfo.year = item.publishedDate ? item.publishedDate.substring(0, 4) : '';
+    }
+    if (!bookInfo.genre) {
+      bookInfo.genre = item.categories ? item.categories.join(', ') : '';
+    }
 
-    if (item.language) {
-      if (item.language === 'cs') bookInfo.language = 'Čeština';
-      else if (item.language === 'en') bookInfo.language = 'Angličtina';
-      else if (item.language === 'sk') bookInfo.language = 'Slovenština';
-      else if (item.language === 'de') bookInfo.language = 'Němčina';
-      else bookInfo.language = item.language.toUpperCase();
+    if (!bookInfo.language && item.language) {
+      bookInfo.language = mapLanguageCode(item.language);
     }
 
     const desc = ((item.description || '') + ' ' + (bookInfo.genre || '')).toLowerCase();
@@ -141,6 +195,13 @@ export async function lookupBookByIsbnOrTitle(query) {
         .slice(0, 3)
         .map((s) => (typeof s === 'string' ? s : s.name));
       bookInfo.genre = subjs.join(', ');
+    }
+    if (!bookInfo.language && openLibraryData.languages) {
+      const langObj = openLibraryData.languages[0];
+      const langStr = typeof langObj === 'string' ? langObj : (langObj.key || langObj.name || '');
+      if (langStr) {
+        bookInfo.language = mapLanguageCode(langStr.replace('/languages/', ''));
+      }
     }
   }
 

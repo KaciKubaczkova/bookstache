@@ -1,6 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { X, BookPlus, Check, Save, Sparkles, Tag, Users, Globe, Calendar, User, Book } from 'lucide-react';
 
+const MAIN_LANGUAGES = [
+  'Angličtina',
+  'Čeština',
+  'Francouzština',
+  'Italština',
+  'Němčina',
+  'Polština',
+  'Ruština',
+  'Slovenština',
+  'Španělština'
+];
+
 export default function BookFormModal({ isOpen, initialData, onClose, onSave, libraryName }) {
   const [formData, setFormData] = useState({
     isbn: '',
@@ -14,11 +26,16 @@ export default function BookFormModal({ isOpen, initialData, onClose, onSave, li
     notes: ''
   });
 
+  const [selectedLanguageOption, setSelectedLanguageOption] = useState('Čeština');
+  const [customLanguage, setCustomLanguage] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
     if (initialData) {
+      const lang = initialData.language || 'Čeština';
+      const isMainLang = MAIN_LANGUAGES.includes(lang);
+
       setFormData({
         isbn: initialData.isbn || '',
         title: initialData.title || '',
@@ -26,12 +43,36 @@ export default function BookFormModal({ isOpen, initialData, onClose, onSave, li
         year: initialData.year || '',
         genre: initialData.genre || '',
         target_age: initialData.target_age || 'Všechny věkové kategorie',
-        language: initialData.language || 'Čeština',
+        language: lang,
         status: initialData.status || 'Dostupná',
         notes: initialData.notes || ''
       });
+
+      if (isMainLang) {
+        setSelectedLanguageOption(lang);
+        setCustomLanguage('');
+      } else {
+        setSelectedLanguageOption('ADD_OTHER');
+        setCustomLanguage(lang);
+      }
     }
   }, [initialData]);
+
+  const handleLanguageSelectChange = (e) => {
+    const val = e.target.value;
+    setSelectedLanguageOption(val);
+    if (val === 'ADD_OTHER') {
+      setFormData((prev) => ({ ...prev, language: customLanguage }));
+    } else {
+      setFormData((prev) => ({ ...prev, language: val }));
+    }
+  };
+
+  const handleCustomLanguageChange = (e) => {
+    const val = e.target.value;
+    setCustomLanguage(val);
+    setFormData((prev) => ({ ...prev, language: val }));
+  };
 
   if (!isOpen) return null;
 
@@ -138,13 +179,29 @@ export default function BookFormModal({ isOpen, initialData, onClose, onSave, li
                 <Globe className="w-3.5 h-3.5 text-[#8b2626]" />
                 <span>Jazyk</span>
               </label>
-              <input
-                type="text"
-                value={formData.language}
-                onChange={(e) => setFormData({ ...formData, language: e.target.value })}
-                placeholder="Čeština, Angličtina..."
+              <select
+                value={selectedLanguageOption}
+                onChange={handleLanguageSelectChange}
                 className="w-full p-2.5 text-sm bg-[#efe6d5] border border-[#a1887f] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#8b2626]"
-              />
+              >
+                {MAIN_LANGUAGES.map((lang) => (
+                  <option key={lang} value={lang}>
+                    {lang}
+                  </option>
+                ))}
+                <option value="ADD_OTHER">+ přidat další</option>
+              </select>
+
+              {selectedLanguageOption === 'ADD_OTHER' && (
+                <input
+                  type="text"
+                  value={customLanguage}
+                  onChange={handleCustomLanguageChange}
+                  placeholder="Zadejte vlastní jazyk..."
+                  className="w-full mt-2 p-2.5 text-sm bg-[#efe6d5] border border-[#a1887f] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#8b2626]"
+                  autoFocus
+                />
+              )}
             </div>
           </div>
 
