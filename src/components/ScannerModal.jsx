@@ -297,7 +297,6 @@ export default function ScannerModal({ isOpen, onClose, onBookFound }) {
                 author: '',
                 year: '',
                 genre: '',
-                target_age: 'Všechny věkové kategorie',
                 language: 'Čeština'
               });
             }}

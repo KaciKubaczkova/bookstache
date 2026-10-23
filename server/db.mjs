@@ -26,7 +26,6 @@ db.exec(`
     author TEXT,
     year TEXT,
     genre TEXT,
-    target_age TEXT,
     language TEXT,
     status TEXT DEFAULT 'Dostupná',
     notes TEXT,

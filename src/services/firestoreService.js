@@ -63,7 +63,6 @@ export async function getOrCreateBookTitle(bookData) {
       author: (bookData.author || '').trim(),
       genre: bookData.genre || '',
       year: bookData.year || '',
-      target_age: bookData.target_age || 'Všechny věkové kategorie',
       language: bookData.language || 'Čeština',
       coverUrl: bookData.coverUrl || '',
       createdAt: new Date().toISOString()
@@ -228,7 +227,6 @@ export async function fetchLibraryExemplars(libraryId) {
         isbn: bookTitle.isbn || exData.isbn || '',
         genre: bookTitle.genre || exData.genre || '',
         year: bookTitle.year || exData.year || '',
-        target_age: bookTitle.target_age || exData.target_age || 'Všechny věkové kategorie',
         language: bookTitle.language || exData.language || 'Čeština',
         coverUrl: exData.coverUrl || bookTitle.coverUrl || ''
       });
@@ -276,7 +274,6 @@ export async function saveLibraryExemplar(libraryId, formData) {
       isbn: bookTitle.isbn,
       genre: bookTitle.genre,
       year: bookTitle.year,
-      target_age: bookTitle.target_age,
       language: bookTitle.language
     };
   } catch (err) {
@@ -330,7 +327,6 @@ export async function fetchVintedExemplars(filters = {}) {
         isbn: bookTitle.isbn || exData.isbn || '',
         genre: bookTitle.genre || exData.genre || '',
         year: bookTitle.year || exData.year || '',
-        target_age: bookTitle.target_age || exData.target_age || 'Všechny věkové kategorie',
         language: bookTitle.language || exData.language || 'Čeština',
         coverUrl: exData.coverUrl || bookTitle.coverUrl || ''
       };

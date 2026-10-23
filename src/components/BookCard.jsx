@@ -67,12 +67,6 @@ export default function BookCard({ book, role, onToggleStatus, onClickDetail, on
               {book.genre}
             </span>
           )}
-          {book.target_age && (
-            <span className="bg-[#f7f3ed] px-2 py-0.5 rounded-md border border-[#d7ccc8] flex items-center gap-1">
-              <Users className="w-3 h-3 text-[#7d5d42]" />
-              {book.target_age}
-            </span>
-          )}
         </div>
       </div>
 

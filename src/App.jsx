@@ -45,7 +45,6 @@ export default function App() {
   const [books, setBooks] = useState([]);
   const [activeFilter, setActiveFilter] = useState('all'); // 'all' | 'Dostupná' | 'Půjčená'
   const [selectedGenreFilter, setSelectedGenreFilter] = useState('all');
-  const [selectedAgeFilter, setSelectedAgeFilter] = useState('all');
   const [sortBy, setSortBy] = useState('newest'); // 'newest' | 'title' | 'author' | 'year'
   const [searchQuery, setSearchQuery] = useState('');
   const [loadingBooks, setLoadingBooks] = useState(false);
@@ -159,13 +158,9 @@ export default function App() {
     }
   };
 
-  // Unique genres & age groups present in current library
+  // Unique genres present in current library
   const availableGenres = Array.from(
     new Set(books.map((b) => b.genre).filter(Boolean))
-  ).sort();
-
-  const availableAgeGroups = Array.from(
-    new Set(books.map((b) => b.target_age).filter(Boolean))
   ).sort();
 
   // Filtered and sorted books list calculation
@@ -175,10 +170,6 @@ export default function App() {
       if (activeFilter === 'Půjčená' && b.status !== 'Půjčená') return false;
 
       if (selectedGenreFilter !== 'all' && b.genre !== selectedGenreFilter) {
-        return false;
-      }
-
-      if (selectedAgeFilter !== 'all' && b.target_age !== selectedAgeFilter) {
         return false;
       }
 
@@ -454,12 +445,9 @@ export default function App() {
         onSelectFilter={setActiveFilter}
         selectedGenreFilter={selectedGenreFilter}
         onSelectGenreFilter={setSelectedGenreFilter}
-        selectedAgeFilter={selectedAgeFilter}
-        onSelectAgeFilter={setSelectedAgeFilter}
         sortBy={sortBy}
         onSelectSortBy={setSortBy}
         availableGenres={availableGenres}
-        availableAgeGroups={availableAgeGroups}
         currentLibrary={currentLibrary}
         allBooks={books}
         role={role}

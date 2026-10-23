@@ -20,7 +20,6 @@ export default function BookFormModal({ isOpen, initialData, onClose, onSave, li
     author: '',
     year: '',
     genre: '',
-    target_age: 'Všechny věkové kategorie',
     language: 'Čeština',
     status: 'Dostupná',
     notes: ''
@@ -42,7 +41,6 @@ export default function BookFormModal({ isOpen, initialData, onClose, onSave, li
         author: initialData.author || '',
         year: initialData.year || '',
         genre: initialData.genre || '',
-        target_age: initialData.target_age || 'Všechny věkové kategorie',
         language: lang,
         status: initialData.status || 'Dostupná',
         notes: initialData.notes || ''
@@ -205,39 +203,19 @@ export default function BookFormModal({ isOpen, initialData, onClose, onSave, li
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            {/* Žánr */}
-            <div>
-              <label className="block text-[#5c3a21] mb-1 font-bold flex items-center space-x-1">
-                <Tag className="w-3.5 h-3.5 text-[#8b2626]" />
-                <span>Žánr</span>
-              </label>
-              <input
-                type="text"
-                value={formData.genre}
-                onChange={(e) => setFormData({ ...formData, genre: e.target.value })}
-                placeholder="Román, Pohádky, Sci-fi..."
-                className="w-full p-2.5 text-sm bg-[#efe6d5] border border-[#a1887f] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#8b2626]"
-              />
-            </div>
-
-            {/* Cílová skupina věková */}
-            <div>
-              <label className="block text-[#5c3a21] mb-1 font-bold flex items-center space-x-1">
-                <Users className="w-3.5 h-3.5 text-[#8b2626]" />
-                <span>Cílová věková skupina</span>
-              </label>
-              <select
-                value={formData.target_age}
-                onChange={(e) => setFormData({ ...formData, target_age: e.target.value })}
-                className="w-full p-2.5 text-sm bg-[#efe6d5] border border-[#a1887f] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#8b2626]"
-              >
-                <option value="Děti (0-12 let)">Děti (0-12 let)</option>
-                <option value="Mládež (12-18 let)">Mládež (12-18 let)</option>
-                <option value="Dospělí">Dospělí</option>
-                <option value="Všechny věkové kategorie">Všechny věkové kategorie</option>
-              </select>
-            </div>
+          {/* Žánr */}
+          <div>
+            <label className="block text-[#5c3a21] mb-1 font-bold flex items-center space-x-1">
+              <Tag className="w-3.5 h-3.5 text-[#8b2626]" />
+              <span>Žánr</span>
+            </label>
+            <input
+              type="text"
+              value={formData.genre}
+              onChange={(e) => setFormData({ ...formData, genre: e.target.value })}
+              placeholder="Román, Pohádky, Sci-fi..."
+              className="w-full p-2.5 text-sm bg-[#efe6d5] border border-[#a1887f] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#8b2626]"
+            />
           </div>
 
           <div className="grid grid-cols-2 gap-3">

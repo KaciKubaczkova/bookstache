@@ -50,7 +50,6 @@ test('Server integration tests', async (t) => {
         author: 'Božena Němcová',
         year: '1855',
         genre: 'Klasika',
-        target_age: 'Všechny věkové kategorie',
         language: 'Čeština',
         status: 'Dostupná'
       })
@@ -66,7 +65,6 @@ test('Server integration tests', async (t) => {
         author: 'Antoine de Saint-Exupéry',
         year: '1943',
         genre: 'Pohádka',
-        target_age: 'Děti (0-12 let)',
         language: 'Čeština',
         status: 'Půjčená'
       })

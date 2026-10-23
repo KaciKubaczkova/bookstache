@@ -48,7 +48,6 @@ export async function exportLibraryToExcel(library, providedBooks = null) {
       'Autor': b.author || '',
       'Rok vydání': b.year || '',
       'Žánr': b.genre || '',
-      'Věková skupina': b.target_age || 'Všechny věkové kategorie',
       'Jazyk': b.language || 'Čeština',
       'Stav': b.status || 'Dostupná',
       'Datum naskenování / Přidání': formattedDate,
@@ -65,7 +64,6 @@ export async function exportLibraryToExcel(library, providedBooks = null) {
       'Autor': '',
       'Rok vydání': '',
       'Žánr': '',
-      'Věková skupina': '',
       'Jazyk': '',
       'Stav': '',
       'Datum naskenování / Přidání': '',
@@ -83,7 +81,6 @@ export async function exportLibraryToExcel(library, providedBooks = null) {
     { wch: 25 }, // Autor
     { wch: 12 }, // Rok vydání
     { wch: 18 }, // Žánr
-    { wch: 24 }, // Věková skupina
     { wch: 12 }, // Jazyk
     { wch: 15 }, // Stav
     { wch: 22 }, // Datum naskenování / Přidání
