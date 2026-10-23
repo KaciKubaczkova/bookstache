@@ -55,8 +55,7 @@ export default function TableModal({
         (b.title || '').toLowerCase().includes(q) ||
         (b.author || '').toLowerCase().includes(q) ||
         (b.isbn || '').toLowerCase().includes(q) ||
-        (b.genre || '').toLowerCase().includes(q) ||
-        (b.target_age || '').toLowerCase().includes(q)
+        (b.genre || '').toLowerCase().includes(q)
       );
     })
     .sort((a, b) => {
@@ -90,7 +89,7 @@ export default function TableModal({
   };
 
   const handleCopyTable = () => {
-    const headers = ['ID', 'ISBN', 'Název knihy', 'Autor', 'Rok', 'Žánr', 'Věková skupina', 'Jazyk', 'Stav', 'Datum přidání', 'Poznámky'];
+    const headers = ['ID', 'ISBN', 'Název knihy', 'Autor', 'Rok', 'Žánr', 'Jazyk', 'Stav', 'Datum přidání', 'Poznámky'];
     const rows = filteredBooks.map((b) => [
       b.id || '',
       b.isbn || '',
@@ -98,7 +97,6 @@ export default function TableModal({
       b.author || '',
       b.year || '',
       b.genre || '',
-      b.target_age || '',
       b.language || 'Čeština',
       b.status || 'Dostupná',
       formatDate(b.scanned_at || b.createdAt),
@@ -306,12 +304,6 @@ export default function TableModal({
                       Žánr {sortField === 'genre' ? (sortOrder === 'asc' ? '▲' : '▼') : ''}
                     </th>
                     <th
-                      onClick={() => handleSort('target_age')}
-                      className="p-2.5 border-r border-gray-300 cursor-pointer hover:bg-[#e8ddc8] transition-colors whitespace-nowrap"
-                    >
-                      Věková skupina {sortField === 'target_age' ? (sortOrder === 'asc' ? '▲' : '▼') : ''}
-                    </th>
-                    <th
                       onClick={() => handleSort('language')}
                       className="p-2.5 border-r border-gray-300 cursor-pointer hover:bg-[#e8ddc8] transition-colors whitespace-nowrap"
                     >
@@ -482,32 +474,6 @@ export default function TableModal({
                             </span>
                           ) : (
                             '—'
-                          )}
-                        </td>
-
-                        {/* Target Age */}
-                        <td
-                          onClick={() => startCellEdit(book, 'target_age', book.target_age)}
-                          className={`p-2.5 border-r border-gray-200 whitespace-nowrap text-gray-600 ${
-                            role === 'librarian' ? 'cursor-pointer hover:bg-amber-100/50' : ''
-                          }`}
-                        >
-                          {isEditing('target_age') ? (
-                            <div className="flex items-center space-x-1">
-                              <input
-                                autoFocus
-                                type="text"
-                                value={cellValue}
-                                onChange={(e) => setCellValue(e.target.value)}
-                                onKeyDown={(e) => handleKeyDown(e, book)}
-                                className="w-full px-1.5 py-0.5 border border-[#8b2626] rounded text-xs focus:outline-none bg-white"
-                              />
-                              <button onClick={() => saveCellEdit(book)} className="p-0.5 text-emerald-700 hover:bg-emerald-100 rounded">
-                                <Save className="w-3.5 h-3.5" />
-                              </button>
-                            </div>
-                          ) : (
-                            book.target_age || '—'
                           )}
                         </td>
 

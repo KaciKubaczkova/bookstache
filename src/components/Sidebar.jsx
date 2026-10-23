@@ -11,12 +11,9 @@ export default function Sidebar({
   onSelectFilter,
   selectedGenreFilter,
   onSelectGenreFilter,
-  selectedAgeFilter,
-  onSelectAgeFilter,
   sortBy,
   onSelectSortBy,
   availableGenres = [],
-  availableAgeGroups = [],
   currentLibrary,
   allBooks = [],
   role,
@@ -207,7 +204,7 @@ export default function Sidebar({
             </div>
           </div>
 
-          {/* Genre & Age Filtering */}
+          {/* Genre & Sorting Filtering */}
           <div className="space-y-3 border-t border-[#d7ccc8] pt-4">
             <div>
               <label className="block text-xs font-bold text-[#7d5d42] uppercase tracking-wider mb-1.5">
@@ -221,22 +218,6 @@ export default function Sidebar({
                 <option value="all">Všechny žánry</option>
                 {availableGenres.map((g) => (
                   <option key={g} value={g}>{g}</option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-[#7d5d42] uppercase tracking-wider mb-1.5">
-                Cílová věková skupina
-              </label>
-              <select
-                value={selectedAgeFilter}
-                onChange={(e) => onSelectAgeFilter(e.target.value)}
-                className="w-full p-2 bg-[#f7f3ed] text-[#3a2212] text-xs font-semibold rounded-xl border border-[#a1887f] focus:outline-none focus:ring-2 focus:ring-[#8b2626]"
-              >
-                <option value="all">Všechny věkové skupiny</option>
-                {availableAgeGroups.map((age) => (
-                  <option key={age} value={age}>{age}</option>
                 ))}
               </select>
             </div>

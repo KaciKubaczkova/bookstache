@@ -70,18 +70,10 @@ export default function BookDetailModal({ book, isOpen, onClose, role, onToggleS
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-2">
-            <div className="flex items-center space-x-2 bg-[#efe6d5] p-2.5 rounded-xl border border-[#d7ccc8]">
-              <Tag className="w-4 h-4 text-[#8b2626] shrink-0" />
-              <span className="font-semibold text-xs text-[#5c3a21]">Žánr:</span>
-              <span className="font-bold truncate">{book.genre || 'Neuveden'}</span>
-            </div>
-
-            <div className="flex items-center space-x-2 bg-[#efe6d5] p-2.5 rounded-xl border border-[#d7ccc8]">
-              <Users className="w-4 h-4 text-[#8b2626] shrink-0" />
-              <span className="font-semibold text-xs text-[#5c3a21]">Věk:</span>
-              <span className="font-bold truncate">{book.target_age || 'Všechny věkové kateg.'}</span>
-            </div>
+          <div className="flex items-center space-x-2 bg-[#efe6d5] p-2.5 rounded-xl border border-[#d7ccc8]">
+            <Tag className="w-4 h-4 text-[#8b2626] shrink-0" />
+            <span className="font-semibold text-xs text-[#5c3a21]">Žánr:</span>
+            <span className="font-bold truncate">{book.genre || 'Neuveden'}</span>
           </div>
 
           {book.isbn && (

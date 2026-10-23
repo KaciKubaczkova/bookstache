@@ -30,7 +30,6 @@ export async function lookupBookByIsbnOrTitle(query) {
     author: '',
     year: '',
     genre: '',
-    target_age: '',
     language: '',
     notes: ''
   };
@@ -139,26 +138,6 @@ export async function lookupBookByIsbnOrTitle(query) {
       bookInfo.language = mapLanguageCode(item.language);
     }
 
-    const desc = ((item.description || '') + ' ' + (bookInfo.genre || '')).toLowerCase();
-    if (
-      desc.includes('dět') ||
-      desc.includes('children') ||
-      desc.includes('pro nejmenší') ||
-      desc.includes('pohádk')
-    ) {
-      bookInfo.target_age = 'Děti (0-12 let)';
-    } else if (
-      desc.includes('mládež') ||
-      desc.includes('young adult') ||
-      desc.includes('dospívající')
-    ) {
-      bookInfo.target_age = 'Mládež (12-18 let)';
-    } else if (desc.includes('dospěl') || desc.includes('adult')) {
-      bookInfo.target_age = 'Dospělí';
-    } else {
-      bookInfo.target_age = 'Všechny věkové kategorie';
-    }
-
     if (isIsbn && !bookInfo.isbn) {
       bookInfo.isbn = isbnClean;
     } else if (!bookInfo.isbn && item.industryIdentifiers) {
@@ -208,9 +187,6 @@ export async function lookupBookByIsbnOrTitle(query) {
   // Fallback defaults if no title was retrieved from APIs
   if (!bookInfo.title) {
     bookInfo.title = isIsbn ? `Kniha (ISBN: ${isbnClean})` : cleanQuery;
-  }
-  if (!bookInfo.target_age) {
-    bookInfo.target_age = 'Všechny věkové kategorie';
   }
 
   return bookInfo;

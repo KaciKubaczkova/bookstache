@@ -145,7 +145,6 @@ export function saveBook(libraryId, formData) {
     author: formData.author || '',
     year: formData.year || '',
     genre: formData.genre || '',
-    target_age: formData.target_age || 'Všechny věkové kategorie',
     language: formData.language || 'Čeština',
     status: formData.status || 'Dostupná',
     notes: formData.notes || '',
@@ -175,7 +174,6 @@ export function updateBook(bookId, formData) {
     author: formData.author !== undefined ? formData.author : existing.author,
     year: formData.year !== undefined ? formData.year : existing.year,
     genre: formData.genre !== undefined ? formData.genre : existing.genre,
-    target_age: formData.target_age !== undefined ? formData.target_age : existing.target_age,
     language: formData.language !== undefined ? formData.language : existing.language,
     status: formData.status !== undefined ? formData.status : existing.status,
     notes: formData.notes !== undefined ? formData.notes : existing.notes
@@ -199,11 +197,11 @@ export function exportLibraryCsv(library) {
   const libraryBooks = getBooks(library.id);
 
   let csvContent = '\uFEFF';
-  csvContent += 'ID;ISBN;Název;Autor;Rok vydání;Žánr;Věková skupina;Jazyk;Stav;Datum naskenování;Poznámky\n';
+  csvContent += 'ID;ISBN;Název;Autor;Rok vydání;Žánr;Jazyk;Stav;Datum naskenování;Poznámky\n';
 
   for (const b of libraryBooks) {
     const escape = (str) => `"${(str || '').replace(/"/g, '""')}"`;
-    csvContent += `${b.id};${escape(b.isbn)};${escape(b.title)};${escape(b.author)};${escape(b.year)};${escape(b.genre)};${escape(b.target_age)};${escape(b.language)};${escape(b.status)};${escape(b.scanned_at)};${escape(b.notes)}\n`;
+    csvContent += `${b.id};${escape(b.isbn)};${escape(b.title)};${escape(b.author)};${escape(b.year)};${escape(b.genre)};${escape(b.language)};${escape(b.status)};${escape(b.scanned_at)};${escape(b.notes)}\n`;
   }
 
   const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });

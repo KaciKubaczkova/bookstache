@@ -28,7 +28,6 @@ export default function VintedBookFormModal({
     'Španělština'
   ];
 
-  const [targetAge, setTargetAge] = useState('Všechny věkové kategorie');
   const [language, setLanguage] = useState('Čeština');
   const [selectedLanguageOption, setSelectedLanguageOption] = useState('Čeština');
   const [customLanguage, setCustomLanguage] = useState('');
@@ -53,7 +52,6 @@ export default function VintedBookFormModal({
       setAuthor(initialData.author || '');
       setGenre(initialData.genre || '');
       setYear(initialData.year || '');
-      setTargetAge(initialData.target_age || 'Všechny věkové kategorie');
       setLanguage(lang);
       if (isMainLang) {
         setSelectedLanguageOption(lang);
@@ -73,7 +71,6 @@ export default function VintedBookFormModal({
       setAuthor('');
       setGenre('');
       setYear('');
-      setTargetAge('Všechny věkové kategorie');
       setLanguage('Čeština');
       setSelectedLanguageOption('Čeština');
       setCustomLanguage('');
@@ -169,7 +166,6 @@ export default function VintedBookFormModal({
         author: author.trim(),
         genre: genre.trim(),
         year: year.trim(),
-        target_age: targetAge,
         language,
         status,
         lendingTerms: lendingTerms.trim(),
@@ -284,47 +280,31 @@ export default function VintedBookFormModal({
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-bold text-[#3a2212] mb-1">Jazyk</label>
-              <select
-                value={selectedLanguageOption}
-                onChange={handleLanguageSelectChange}
-                className="w-full px-3 py-2 bg-[#efe6d5] border border-[#a1887f] rounded-xl text-xs text-[#3a2212] focus:outline-none focus:ring-2 focus:ring-[#8b2626] font-semibold"
-              >
-                {MAIN_LANGUAGES.map((lang) => (
-                  <option key={lang} value={lang}>
-                    {lang}
-                  </option>
-                ))}
-                <option value="ADD_OTHER">+ přidat další</option>
-              </select>
+          <div>
+            <label className="block text-xs font-bold text-[#3a2212] mb-1">Jazyk</label>
+            <select
+              value={selectedLanguageOption}
+              onChange={handleLanguageSelectChange}
+              className="w-full px-3 py-2 bg-[#efe6d5] border border-[#a1887f] rounded-xl text-xs text-[#3a2212] focus:outline-none focus:ring-2 focus:ring-[#8b2626] font-semibold"
+            >
+              {MAIN_LANGUAGES.map((lang) => (
+                <option key={lang} value={lang}>
+                  {lang}
+                </option>
+              ))}
+              <option value="ADD_OTHER">+ přidat další</option>
+            </select>
 
-              {selectedLanguageOption === 'ADD_OTHER' && (
-                <input
-                  type="text"
-                  value={customLanguage}
-                  onChange={handleCustomLanguageChange}
-                  placeholder="Zadejte vlastní jazyk..."
-                  className="w-full mt-2 px-3 py-2 bg-[#efe6d5] border border-[#a1887f] rounded-xl text-xs text-[#3a2212] focus:outline-none focus:ring-2 focus:ring-[#8b2626]"
-                  autoFocus
-                />
-              )}
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-[#3a2212] mb-1">Cílová věková skupina</label>
-              <select
-                value={targetAge}
-                onChange={(e) => setTargetAge(e.target.value)}
-                className="w-full px-3 py-2 bg-[#efe6d5] border border-[#a1887f] rounded-xl text-xs text-[#3a2212] focus:outline-none focus:ring-2 focus:ring-[#8b2626] font-semibold"
-              >
-                <option value="Děti (0-12 let)">Děti (0-12 let)</option>
-                <option value="Mládež (12-18 let)">Mládež (12-18 let)</option>
-                <option value="Dospělí">Dospělí</option>
-                <option value="Všechny věkové kategorie">Všechny věkové kategorie</option>
-              </select>
-            </div>
+            {selectedLanguageOption === 'ADD_OTHER' && (
+              <input
+                type="text"
+                value={customLanguage}
+                onChange={handleCustomLanguageChange}
+                placeholder="Zadejte vlastní jazyk..."
+                className="w-full mt-2 px-3 py-2 bg-[#efe6d5] border border-[#a1887f] rounded-xl text-xs text-[#3a2212] focus:outline-none focus:ring-2 focus:ring-[#8b2626]"
+                autoFocus
+              />
+            )}
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

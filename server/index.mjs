@@ -84,7 +84,7 @@ app.get('/api/libraries/:id/books', (req, res) => {
 app.post('/api/libraries/:id/books', async (req, res) => {
   try {
     const libraryId = req.params.id;
-    const { isbn, title, author, year, genre, target_age, language, status, notes } = req.body;
+    const { isbn, title, author, year, genre, language, status, notes } = req.body;
 
     if (!title || !title.trim()) {
       return res.status(400).json({ error: 'Název knihy je povinný' });
@@ -96,8 +96,8 @@ app.post('/api/libraries/:id/books', async (req, res) => {
     }
 
     const info = db.prepare(`
-      INSERT INTO books (library_id, isbn, title, author, year, genre, target_age, language, status, notes)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO books (library_id, isbn, title, author, year, genre, language, status, notes)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       libraryId,
       isbn || '',
@@ -105,7 +105,6 @@ app.post('/api/libraries/:id/books', async (req, res) => {
       author || '',
       year || '',
       genre || '',
-      target_age || 'Všechny věkové kategorie',
       language || 'Čeština',
       status || 'Dostupná',
       notes || ''
@@ -137,11 +136,11 @@ app.put('/api/books/:id', (req, res) => {
       return res.status(404).json({ error: 'Kniha nenalezena' });
     }
 
-    const { isbn, title, author, year, genre, target_age, language, status, notes } = req.body;
+    const { isbn, title, author, year, genre, language, status, notes } = req.body;
 
     db.prepare(`
       UPDATE books
-      SET isbn = ?, title = ?, author = ?, year = ?, genre = ?, target_age = ?, language = ?, status = ?, notes = ?
+      SET isbn = ?, title = ?, author = ?, year = ?, genre = ?, language = ?, status = ?, notes = ?
       WHERE id = ?
     `).run(
       isbn !== undefined ? isbn : existing.isbn,
@@ -149,7 +148,6 @@ app.put('/api/books/:id', (req, res) => {
       author !== undefined ? author : existing.author,
       year !== undefined ? year : existing.year,
       genre !== undefined ? genre : existing.genre,
-      target_age !== undefined ? target_age : existing.target_age,
       language !== undefined ? language : existing.language,
       status !== undefined ? status : existing.status,
       notes !== undefined ? notes : existing.notes,
@@ -206,11 +204,11 @@ app.get('/api/libraries/:id/export/csv', (req, res) => {
     const books = db.prepare('SELECT * FROM books WHERE library_id = ? ORDER BY id ASC').all(libraryId);
 
     let csvContent = '\uFEFF'; // BOM for UTF-8 in Excel / Google Sheets
-    csvContent += 'ID;ISBN;Název;Autor;Rok vydání;Žánr;Věková skupina;Jazyk;Stav;Datum naskenování;Poznámky\n';
+    csvContent += 'ID;ISBN;Název;Autor;Rok vydání;Žánr;Jazyk;Stav;Datum naskenování;Poznámky\n';
 
     for (const b of books) {
       const escape = (str) => `"${(str || '').replace(/"/g, '""')}"`;
-      csvContent += `${b.id};${escape(b.isbn)};${escape(b.title)};${escape(b.author)};${escape(b.year)};${escape(b.genre)};${escape(b.target_age)};${escape(b.language)};${escape(b.status)};${escape(b.scanned_at)};${escape(b.notes)}\n`;
+      csvContent += `${b.id};${escape(b.isbn)};${escape(b.title)};${escape(b.author)};${escape(b.year)};${escape(b.genre)};${escape(b.language)};${escape(b.status)};${escape(b.scanned_at)};${escape(b.notes)}\n`;
     }
 
     const safeFilename = encodeURIComponent(library.name.replace(/\s+/g, '_'));
