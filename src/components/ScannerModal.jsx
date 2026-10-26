@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Camera, Barcode, Search, AlertCircle, Loader2 } from 'lucide-react';
+import { X, Camera, Barcode, Search, AlertCircle, Loader2, Edit3, ArrowLeft } from 'lucide-react';
 import { Html5Qrcode } from 'html5-qrcode';
 import { lookupBookByIsbnOrTitle } from '../services/bookLookup';
 
 export default function ScannerModal({ isOpen, onClose, onBookFound }) {
-  const [activeTab, setActiveTab] = useState('camera'); // 'camera' | 'manual' | 'title'
+  // Mode hierarchy:
+  // viewMode: 'camera' | 'choose_manual' | 'input_isbn' | 'input_title'
+  const [viewMode, setViewMode] = useState('camera');
   const [manualIsbn, setManualIsbn] = useState('');
   const [titleQuery, setTitleQuery] = useState('');
   const [loading, setLoading] = useState(false);
@@ -14,7 +16,7 @@ export default function ScannerModal({ isOpen, onClose, onBookFound }) {
   const isScanningRef = useRef(false);
 
   useEffect(() => {
-    if (isOpen && activeTab === 'camera') {
+    if (isOpen && viewMode === 'camera') {
       startCamera();
     } else {
       stopCamera();
@@ -23,7 +25,17 @@ export default function ScannerModal({ isOpen, onClose, onBookFound }) {
     return () => {
       stopCamera();
     };
-  }, [isOpen, activeTab]);
+  }, [isOpen, viewMode]);
+
+  // Reset internal state when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      setViewMode('camera');
+      setError('');
+      setManualIsbn('');
+      setTitleQuery('');
+    }
+  }, [isOpen]);
 
   const startCamera = async () => {
     setCameraError('');
@@ -110,7 +122,10 @@ export default function ScannerModal({ isOpen, onClose, onBookFound }) {
                 Skenovat nebo vyhledat knihu
               </h2>
               <p className="text-xs text-[#5c3a21]">
-                Použijte fotoaparát, kód ISBN nebo název
+                {viewMode === 'camera' && 'Naskenujte čárový kód fotoaparátem'}
+                {viewMode === 'choose_manual' && 'Vyberte způsob ručního zadání'}
+                {viewMode === 'input_isbn' && 'Zadejte ISBN kód knihy'}
+                {viewMode === 'input_title' && 'Zadejte název knihy'}
               </p>
             </div>
           </div>
@@ -125,57 +140,18 @@ export default function ScannerModal({ isOpen, onClose, onBookFound }) {
           </button>
         </div>
 
-        {/* Tab Selector */}
-        <div className="grid grid-cols-3 gap-1 bg-[#efe6d5] p-1 rounded-xl my-4 text-xs font-bold text-[#3a2212]">
-          <button
-            onClick={() => setActiveTab('camera')}
-            className={`py-2 px-1 rounded-lg flex items-center justify-center space-x-1.5 transition-colors cursor-pointer ${
-              activeTab === 'camera'
-                ? 'bg-[#8b2626] text-white shadow-xs'
-                : 'hover:bg-[#e8ddc8]'
-            }`}
-          >
-            <Camera className="w-4 h-4" />
-            <span>Kamera</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('manual')}
-            className={`py-2 px-1 rounded-lg flex items-center justify-center space-x-1.5 transition-colors cursor-pointer ${
-              activeTab === 'manual'
-                ? 'bg-[#8b2626] text-white shadow-xs'
-                : 'hover:bg-[#e8ddc8]'
-            }`}
-          >
-            <Barcode className="w-4 h-4" />
-            <span>Kód ISBN</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('title')}
-            className={`py-2 px-1 rounded-lg flex items-center justify-center space-x-1.5 transition-colors cursor-pointer ${
-              activeTab === 'title'
-                ? 'bg-[#8b2626] text-white shadow-xs'
-                : 'hover:bg-[#e8ddc8]'
-            }`}
-          >
-            <Search className="w-4 h-4" />
-            <span>Starší knihy</span>
-          </button>
-        </div>
-
         {error && (
-          <div className="bg-amber-100 border border-amber-300 text-amber-900 text-xs p-3 rounded-xl mb-3 flex items-center space-x-2">
+          <div className="bg-amber-100 border border-amber-300 text-amber-900 text-xs p-3 rounded-xl mt-3 flex items-center space-x-2">
             <AlertCircle className="w-4 h-4 shrink-0 text-amber-700" />
             <span>{error}</span>
           </div>
         )}
 
-        {/* Tab Content */}
-        <div className="flex-1 overflow-y-auto">
-          {/* CAMERA TAB */}
-          {activeTab === 'camera' && (
-            <div className="space-y-3 text-center">
+        {/* Dynamic Main Body Content */}
+        <div className="flex-1 overflow-y-auto py-4">
+          {/* CAMERA MODE */}
+          {viewMode === 'camera' && (
+            <div className="space-y-4 text-center">
               <div
                 id="qr-reader"
                 className="w-full bg-black rounded-xl overflow-hidden min-h-[220px] flex items-center justify-center relative border-2 border-[#8b2626]"
@@ -190,17 +166,86 @@ export default function ScannerModal({ isOpen, onClose, onBookFound }) {
                   Naměřte fotoaparát na čárový kód nebo ISBN číslo knihy...
                 </p>
               )}
+
+              {/* Main "Zadat ručně" action button under camera */}
+              <div className="pt-2">
+                <button
+                  onClick={() => {
+                    stopCamera();
+                    setViewMode('choose_manual');
+                  }}
+                  className="w-full py-3 px-4 bg-[#efe6d5] hover:bg-[#e8ddc8] text-[#3a2212] font-bold text-sm rounded-xl border border-[#a1887f] shadow-xs flex items-center justify-center space-x-2 transition-colors cursor-pointer"
+                >
+                  <Edit3 className="w-4 h-4 text-[#8b2626]" />
+                  <span>Zadat ručně</span>
+                </button>
+              </div>
             </div>
           )}
 
-          {/* MANUAL ISBN TAB */}
-          {activeTab === 'manual' && (
+          {/* CHOOSE MANUAL OPTION MODE */}
+          {viewMode === 'choose_manual' && (
+            <div className="space-y-4 py-2">
+              <p className="text-xs font-semibold text-[#5c3a21] text-center mb-2">
+                Jak si přejete knihu vyhledat?
+              </p>
+
+              <div className="grid grid-cols-1 gap-3">
+                <button
+                  onClick={() => setViewMode('input_isbn')}
+                  className="p-4 bg-[#efe6d5] hover:bg-[#e8ddc8] border border-[#a1887f] rounded-xl flex items-center space-x-3 transition-colors cursor-pointer text-left group"
+                >
+                  <div className="p-2.5 bg-[#8b2626] text-white rounded-lg shrink-0">
+                    <Barcode className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-sm text-[#3a2212] group-hover:text-[#8b2626] transition-colors">
+                      Zadat ISBN kód
+                    </h3>
+                    <p className="text-xs text-[#5c3a21] mt-0.5">
+                      Vyhledání podle čísla ISBN ze zadní obálky
+                    </p>
+                  </div>
+                </button>
+
+                <button
+                  onClick={() => setViewMode('input_title')}
+                  className="p-4 bg-[#efe6d5] hover:bg-[#e8ddc8] border border-[#a1887f] rounded-xl flex items-center space-x-3 transition-colors cursor-pointer text-left group"
+                >
+                  <div className="p-2.5 bg-[#8b2626] text-white rounded-lg shrink-0">
+                    <Search className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-sm text-[#3a2212] group-hover:text-[#8b2626] transition-colors">
+                      Zadat název knihy
+                    </h3>
+                    <p className="text-xs text-[#5c3a21] mt-0.5">
+                      Vyhledání podle názvu nebo autora knihy
+                    </p>
+                  </div>
+                </button>
+              </div>
+
+              <div className="pt-3 border-t border-[#d7ccc8] flex justify-between items-center">
+                <button
+                  onClick={() => setViewMode('camera')}
+                  className="text-xs font-bold text-[#5c3a21] hover:underline cursor-pointer flex items-center space-x-1"
+                >
+                  <ArrowLeft className="w-3.5 h-3.5" />
+                  <span>Zpět na kameru</span>
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* INPUT ISBN MODE */}
+          {viewMode === 'input_isbn' && (
             <form
               onSubmit={(e) => {
                 e.preventDefault();
                 handleLookup(manualIsbn);
               }}
-              className="space-y-4 py-2"
+              className="space-y-4 py-1"
             >
               <div>
                 <label className="block text-xs font-bold text-[#5c3a21] mb-1">
@@ -236,21 +281,40 @@ export default function ScannerModal({ isOpen, onClose, onBookFound }) {
                   </>
                 )}
               </button>
+
+              <div className="pt-2 flex justify-between items-center border-t border-[#d7ccc8]">
+                <button
+                  type="button"
+                  onClick={() => setViewMode('choose_manual')}
+                  className="text-xs font-bold text-[#5c3a21] hover:underline cursor-pointer flex items-center space-x-1"
+                >
+                  <ArrowLeft className="w-3.5 h-3.5" />
+                  <span>Zpět na výběr zadání</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setViewMode('camera')}
+                  className="text-xs font-bold text-[#8b2626] hover:underline cursor-pointer"
+                >
+                  Naskenovat kamerou
+                </button>
+              </div>
             </form>
           )}
 
-          {/* TITLE SEARCH TAB (for older books without ISBN barcode) */}
-          {activeTab === 'title' && (
+          {/* INPUT TITLE MODE */}
+          {viewMode === 'input_title' && (
             <form
               onSubmit={(e) => {
                 e.preventDefault();
                 handleLookup(titleQuery);
               }}
-              className="space-y-4 py-2"
+              className="space-y-4 py-1"
             >
               <div>
                 <label className="block text-xs font-bold text-[#5c3a21] mb-1">
-                  Název nebo autor starší knihy
+                  Název nebo autor knihy
                 </label>
                 <input
                   type="text"
@@ -261,7 +325,7 @@ export default function ScannerModal({ isOpen, onClose, onBookFound }) {
                   autoFocus
                 />
                 <p className="text-[11px] text-[#7d5d42] mt-1">
-                  Pro starší knihy bez čárového kódu zadejte název nebo autora. Získáme obecné informace o knize z katalogů.
+                  Pro knihy bez čárového kódu zadejte název nebo autora. Získáme obecné informace o knize z katalogů.
                 </p>
               </div>
 
@@ -282,12 +346,31 @@ export default function ScannerModal({ isOpen, onClose, onBookFound }) {
                   </>
                 )}
               </button>
+
+              <div className="pt-2 flex justify-between items-center border-t border-[#d7ccc8]">
+                <button
+                  type="button"
+                  onClick={() => setViewMode('choose_manual')}
+                  className="text-xs font-bold text-[#5c3a21] hover:underline cursor-pointer flex items-center space-x-1"
+                >
+                  <ArrowLeft className="w-3.5 h-3.5" />
+                  <span>Zpět na výběr zadání</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setViewMode('camera')}
+                  className="text-xs font-bold text-[#8b2626] hover:underline cursor-pointer"
+                >
+                  Naskenovat kamerou
+                </button>
+              </div>
             </form>
           )}
         </div>
 
         {/* Option to open blank form manually */}
-        <div className="border-t border-[#d7ccc8] pt-3 mt-3 text-center">
+        <div className="border-t border-[#d7ccc8] pt-3 mt-1 text-center">
           <button
             onClick={() => {
               stopCamera();
