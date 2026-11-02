@@ -380,7 +380,7 @@ export default function ScannerModal({ isOpen, onClose, onBookFound }) {
                 author: '',
                 year: '',
                 genre: '',
-                language: 'Čeština'
+                language: ''
               });
             }}
             className="text-xs text-[#8b2626] font-bold hover:underline cursor-pointer"

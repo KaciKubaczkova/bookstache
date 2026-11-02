@@ -28,8 +28,8 @@ export default function VintedBookFormModal({
     'Španělština'
   ];
 
-  const [language, setLanguage] = useState('Čeština');
-  const [selectedLanguageOption, setSelectedLanguageOption] = useState('Čeština');
+  const [language, setLanguage] = useState('');
+  const [selectedLanguageOption, setSelectedLanguageOption] = useState('');
   const [customLanguage, setCustomLanguage] = useState('');
   const [status, setStatus] = useState('Dostupná k půjčení');
   const [lendingTerms, setLendingTerms] = useState('');
@@ -40,11 +40,15 @@ export default function VintedBookFormModal({
   const [loadingLookup, setLoadingLookup] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [lookupError, setLookupError] = useState('');
+  const [validationError, setValidationError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
+    setLookupError('');
+    setValidationError('');
     if (initialData) {
-      const lang = initialData.language || 'Čeština';
+      const isEditExisting = Boolean(initialData.id);
+      const lang = initialData.language || '';
       const isMainLang = MAIN_LANGUAGES.includes(lang);
 
       setIsbn(initialData.isbn || '');
@@ -52,14 +56,22 @@ export default function VintedBookFormModal({
       setAuthor(initialData.author || '');
       setGenre(initialData.genre || '');
       setYear(initialData.year || '');
-      setLanguage(lang);
-      if (isMainLang) {
-        setSelectedLanguageOption(lang);
-        setCustomLanguage('');
+
+      if (isEditExisting && lang) {
+        setLanguage(lang);
+        if (isMainLang) {
+          setSelectedLanguageOption(lang);
+          setCustomLanguage('');
+        } else {
+          setSelectedLanguageOption('ADD_OTHER');
+          setCustomLanguage(lang);
+        }
       } else {
-        setSelectedLanguageOption('ADD_OTHER');
-        setCustomLanguage(lang);
+        setLanguage('');
+        setSelectedLanguageOption('');
+        setCustomLanguage('');
       }
+
       setStatus(initialData.status || 'Dostupná k půjčení');
       setLendingTerms(initialData.lendingTerms || '');
       setNotes(initialData.notes || '');
@@ -71,8 +83,8 @@ export default function VintedBookFormModal({
       setAuthor('');
       setGenre('');
       setYear('');
-      setLanguage('Čeština');
-      setSelectedLanguageOption('Čeština');
+      setLanguage('');
+      setSelectedLanguageOption('');
       setCustomLanguage('');
       setStatus('Dostupná k půjčení');
       setLendingTerms('Půjčím na 1 měsíc zdarma, osobní předání.');
@@ -84,6 +96,7 @@ export default function VintedBookFormModal({
 
   const handleLanguageSelectChange = (e) => {
     const val = e.target.value;
+    setValidationError('');
     setSelectedLanguageOption(val);
     if (val === 'ADD_OTHER') {
       setLanguage(customLanguage);
@@ -94,6 +107,7 @@ export default function VintedBookFormModal({
 
   const handleCustomLanguageChange = (e) => {
     const val = e.target.value;
+    setValidationError('');
     setCustomLanguage(val);
     setLanguage(val);
   };
@@ -112,16 +126,10 @@ export default function VintedBookFormModal({
         if (data.genre) setGenre(data.genre);
         if (data.year) setYear(data.year);
         if (data.coverUrl) setCoverUrl(data.coverUrl);
-        if (data.language) {
-          setLanguage(data.language);
-          if (MAIN_LANGUAGES.includes(data.language)) {
-            setSelectedLanguageOption(data.language);
-            setCustomLanguage('');
-          } else {
-            setSelectedLanguageOption('ADD_OTHER');
-            setCustomLanguage(data.language);
-          }
-        }
+        // Language is intentionally left for user selection
+        setLanguage('');
+        setSelectedLanguageOption('');
+        setCustomLanguage('');
       } else {
         setLookupError('Kniha nebyla v online databázích nalezena. Vyplňte údaje ručně.');
       }
@@ -151,7 +159,13 @@ export default function VintedBookFormModal({
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setValidationError('');
     if (!title.trim()) return;
+
+    if (!language || !language.trim()) {
+      setValidationError('Prosím vyberte nebo zadejte jazyk knihy.');
+      return;
+    }
 
     setIsSubmitting(true);
     try {
@@ -166,7 +180,7 @@ export default function VintedBookFormModal({
         author: author.trim(),
         genre: genre.trim(),
         year: year.trim(),
-        language,
+        language: language.trim(),
         status,
         lendingTerms: lendingTerms.trim(),
         notes: notes.trim(),
@@ -175,6 +189,7 @@ export default function VintedBookFormModal({
       onClose();
     } catch (err) {
       console.error(err);
+      setValidationError(err.message || 'Chyba při ukládání nabídky');
     } finally {
       setIsSubmitting(false);
     }
@@ -203,6 +218,12 @@ export default function VintedBookFormModal({
             </p>
           </div>
         </div>
+
+        {validationError && (
+          <div className="bg-red-100 border border-red-300 text-red-800 text-xs p-3 rounded-xl mb-4">
+            {validationError}
+          </div>
+        )}
 
         {/* ISBN & Scanner lookup bar */}
         <div className="mb-5 bg-[#efe6d5] p-3.5 rounded-2xl border border-[#d7ccc8] space-y-2">
@@ -281,12 +302,15 @@ export default function VintedBookFormModal({
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-[#3a2212] mb-1">Jazyk</label>
+            <label className="block text-xs font-bold text-[#3a2212] mb-1">
+              Jazyk <span className="text-red-600">*</span>
+            </label>
             <select
               value={selectedLanguageOption}
               onChange={handleLanguageSelectChange}
               className="w-full px-3 py-2 bg-[#efe6d5] border border-[#a1887f] rounded-xl text-xs text-[#3a2212] focus:outline-none focus:ring-2 focus:ring-[#8b2626] font-semibold"
             >
+              <option value="">Vybrat jazyk</option>
               {MAIN_LANGUAGES.map((lang) => (
                 <option key={lang} value={lang}>
                   {lang}

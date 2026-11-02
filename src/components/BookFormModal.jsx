@@ -20,19 +20,21 @@ export default function BookFormModal({ isOpen, initialData, onClose, onSave, li
     author: '',
     year: '',
     genre: '',
-    language: 'Čeština',
+    language: '',
     status: 'Dostupná',
     notes: ''
   });
 
-  const [selectedLanguageOption, setSelectedLanguageOption] = useState('Čeština');
+  const [selectedLanguageOption, setSelectedLanguageOption] = useState('');
   const [customLanguage, setCustomLanguage] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
     if (initialData) {
-      const lang = initialData.language || 'Čeština';
+      // If editing an existing saved book, initialData will have an id or explicit language
+      const isEditExisting = Boolean(initialData.id);
+      const lang = initialData.language || '';
       const isMainLang = MAIN_LANGUAGES.includes(lang);
 
       setFormData({
@@ -41,23 +43,42 @@ export default function BookFormModal({ isOpen, initialData, onClose, onSave, li
         author: initialData.author || '',
         year: initialData.year || '',
         genre: initialData.genre || '',
-        language: lang,
+        language: isEditExisting ? lang : '',
         status: initialData.status || 'Dostupná',
         notes: initialData.notes || ''
       });
 
-      if (isMainLang) {
-        setSelectedLanguageOption(lang);
-        setCustomLanguage('');
+      if (isEditExisting && lang) {
+        if (isMainLang) {
+          setSelectedLanguageOption(lang);
+          setCustomLanguage('');
+        } else {
+          setSelectedLanguageOption('ADD_OTHER');
+          setCustomLanguage(lang);
+        }
       } else {
-        setSelectedLanguageOption('ADD_OTHER');
-        setCustomLanguage(lang);
+        setSelectedLanguageOption('');
+        setCustomLanguage('');
       }
+    } else {
+      setFormData({
+        isbn: '',
+        title: '',
+        author: '',
+        year: '',
+        genre: '',
+        language: '',
+        status: 'Dostupná',
+        notes: ''
+      });
+      setSelectedLanguageOption('');
+      setCustomLanguage('');
     }
-  }, [initialData]);
+  }, [initialData, isOpen]);
 
   const handleLanguageSelectChange = (e) => {
     const val = e.target.value;
+    setError('');
     setSelectedLanguageOption(val);
     if (val === 'ADD_OTHER') {
       setFormData((prev) => ({ ...prev, language: customLanguage }));
@@ -68,6 +89,7 @@ export default function BookFormModal({ isOpen, initialData, onClose, onSave, li
 
   const handleCustomLanguageChange = (e) => {
     const val = e.target.value;
+    setError('');
     setCustomLanguage(val);
     setFormData((prev) => ({ ...prev, language: val }));
   };
@@ -81,10 +103,19 @@ export default function BookFormModal({ isOpen, initialData, onClose, onSave, li
       return;
     }
 
+    if (!formData.language.trim()) {
+      setError('Prosím vyberte nebo zadejte jazyk knihy.');
+      return;
+    }
+
     setSaving(true);
     setError('');
     try {
-      await onSave(formData);
+      await onSave({
+        ...formData,
+        title: formData.title.trim(),
+        language: formData.language.trim()
+      });
     } catch (err) {
       setError(err.message || 'Chyba při ukládání knihy');
     } finally {
@@ -182,6 +213,7 @@ export default function BookFormModal({ isOpen, initialData, onClose, onSave, li
                 onChange={handleLanguageSelectChange}
                 className="w-full p-2.5 text-sm bg-[#efe6d5] border border-[#a1887f] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#8b2626]"
               >
+                <option value="">Vybrat jazyk</option>
                 {MAIN_LANGUAGES.map((lang) => (
                   <option key={lang} value={lang}>
                     {lang}
