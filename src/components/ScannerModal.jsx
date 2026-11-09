@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Camera, Barcode, Search, AlertCircle, Loader2, Edit3, ArrowLeft, Type, RefreshCw, Check } from 'lucide-react';
+import { X, Camera, Barcode, Search, AlertCircle, Loader2, Edit3, ArrowLeft, Type, Zap, RefreshCw, CheckCircle2 } from 'lucide-react';
 import { Html5Qrcode } from 'html5-qrcode';
 import { lookupBookByIsbnOrTitle } from '../services/bookLookup';
 import { extractIsbnFromText } from '../services/isbnParser';
+import { cropVideoTarget } from '../services/imageProcessing';
 import Tesseract from 'tesseract.js';
 
 export default function ScannerModal({ isOpen, onClose, onBookFound }) {
@@ -19,12 +20,18 @@ export default function ScannerModal({ isOpen, onClose, onBookFound }) {
   const scannerRef = useRef(null);
   const isScanningRef = useRef(false);
 
-  // OCR Camera Video stream & capture refs
+  // OCR Camera Video stream & worker refs
   const videoRef = useRef(null);
   const ocrStreamRef = useRef(null);
+  const ocrWorkerRef = useRef(null);
+  const autoScanIntervalRef = useRef(null);
+  const isOcrProcessingRef = useRef(false);
+
   const [ocrLoading, setOcrLoading] = useState(false);
-  const [ocrProgress, setOcrProgress] = useState('');
+  const [ocrStatus, setOcrStatus] = useState('Namiřte obdélník na řádek s číslem ISBN');
   const [ocrDetectedText, setOcrDetectedText] = useState('');
+  const [autoScanEnabled, setAutoScanEnabled] = useState(true);
+  const [ocrSuccessIsbn, setOcrSuccessIsbn] = useState('');
 
   // Manage camera for barcode scanner
   useEffect(() => {
@@ -39,18 +46,36 @@ export default function ScannerModal({ isOpen, onClose, onBookFound }) {
     };
   }, [isOpen, viewMode]);
 
-  // Manage camera for OCR text scanner
+  // Manage camera and worker for OCR text scanner
   useEffect(() => {
     if (isOpen && viewMode === 'ocr') {
       startOcrCamera();
+      initOcrWorker();
     } else {
       stopOcrCamera();
+      terminateOcrWorker();
+      stopAutoScan();
     }
 
     return () => {
       stopOcrCamera();
+      terminateOcrWorker();
+      stopAutoScan();
     };
   }, [isOpen, viewMode]);
+
+  // Manage auto-scanning loop when in OCR mode
+  useEffect(() => {
+    if (isOpen && viewMode === 'ocr' && autoScanEnabled && !ocrSuccessIsbn) {
+      startAutoScan();
+    } else {
+      stopAutoScan();
+    }
+
+    return () => {
+      stopAutoScan();
+    };
+  }, [isOpen, viewMode, autoScanEnabled, ocrSuccessIsbn]);
 
   // Reset internal state when modal opens
   useEffect(() => {
@@ -60,10 +85,39 @@ export default function ScannerModal({ isOpen, onClose, onBookFound }) {
       setManualIsbn('');
       setTitleQuery('');
       setOcrDetectedText('');
-      setOcrProgress('');
+      setOcrStatus('Namiřte obdélník na řádek s číslem ISBN');
       setOcrLoading(false);
+      setOcrSuccessIsbn('');
+      setAutoScanEnabled(true);
     }
   }, [isOpen]);
+
+  const initOcrWorker = async () => {
+    try {
+      if (ocrWorkerRef.current) return;
+      setOcrStatus('Připravuji čtečku textu...');
+      const worker = await Tesseract.createWorker('eng');
+      await worker.setParameters({
+        tessedit_char_whitelist: '0123456789-ISBNisbnXx:./ ',
+        tessedit_pageseg_mode: '6' // Assume single uniform block/line of text
+      });
+      ocrWorkerRef.current = worker;
+      setOcrStatus('Čtečka připravena. Držte číslo ISBN v rámečku...');
+    } catch (err) {
+      console.warn('Nepodařilo se přednastavit Tesseract worker, použije se výchozí recognize:', err);
+    }
+  };
+
+  const terminateOcrWorker = async () => {
+    if (ocrWorkerRef.current) {
+      try {
+        await ocrWorkerRef.current.terminate();
+      } catch (e) {
+        console.warn('Chyba při ukončení OCR workera:', e);
+      }
+      ocrWorkerRef.current = null;
+    }
+  };
 
   const startBarcodeCamera = async () => {
     setCameraError('');
@@ -124,7 +178,11 @@ export default function ScannerModal({ isOpen, onClose, onBookFound }) {
         stopOcrCamera();
       }
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'environment' }
+        video: {
+          facingMode: 'environment',
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
+        }
       });
       ocrStreamRef.current = stream;
       if (videoRef.current) {
@@ -147,49 +205,78 @@ export default function ScannerModal({ isOpen, onClose, onBookFound }) {
     }
   };
 
-  const captureAndRecognizeIsbn = async () => {
-    if (!videoRef.current) return;
-    setOcrLoading(true);
-    setOcrProgress('Pořizuji snímek textu...');
-    setError('');
+  const startAutoScan = () => {
+    stopAutoScan();
+    autoScanIntervalRef.current = setInterval(() => {
+      if (videoRef.current && !isOcrProcessingRef.current) {
+        processOcrFrame(false);
+      }
+    }, 1200);
+  };
+
+  const stopAutoScan = () => {
+    if (autoScanIntervalRef.current) {
+      clearInterval(autoScanIntervalRef.current);
+      autoScanIntervalRef.current = null;
+    }
+  };
+
+  /**
+   * Process a single cropped and enhanced frame from the video stream
+   */
+  const processOcrFrame = async (isManualClick = false) => {
+    const video = videoRef.current;
+    if (!video || video.readyState < 2 || isOcrProcessingRef.current) return;
+
+    isOcrProcessingRef.current = true;
+    if (isManualClick) {
+      setOcrLoading(true);
+      setOcrStatus('Rozpoznávám ISBN...');
+    }
 
     try {
-      const video = videoRef.current;
-      const canvas = document.createElement('canvas');
-      canvas.width = video.videoWidth || 640;
-      canvas.height = video.videoHeight || 480;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      // Relative crop box coordinates: centered horizontal band
+      const relBox = { x: 0.08, y: 0.35, width: 0.84, height: 0.30 };
+      const processedCanvas = cropVideoTarget(video, relBox);
+      if (!processedCanvas) {
+        isOcrProcessingRef.current = false;
+        if (isManualClick) setOcrLoading(false);
+        return;
+      }
 
-      setOcrProgress('Rozpoznávám tištěné ISBN číslo z obrázku...');
+      let fullText = '';
+      if (ocrWorkerRef.current) {
+        const result = await ocrWorkerRef.current.recognize(processedCanvas);
+        fullText = result.data.text || '';
+      } else {
+        const result = await Tesseract.recognize(processedCanvas, 'eng');
+        fullText = result.data.text || '';
+      }
 
-      const result = await Tesseract.recognize(canvas, 'eng', {
-        logger: (m) => {
-          if (m.status === 'recognizing text') {
-            setOcrProgress(`Rozpoznávání textu: ${Math.round(m.progress * 100)}%`);
-          }
-        }
-      });
-
-      const fullText = result.data.text;
-      console.log('OCR text rozpoznán:', fullText);
-      setOcrDetectedText(fullText.trim());
+      const trimmedText = fullText.trim();
+      if (trimmedText) {
+        setOcrDetectedText(trimmedText);
+      }
 
       const foundIsbn = extractIsbnFromText(fullText);
       if (foundIsbn) {
-        setOcrProgress(`Nalezeno ISBN: ${foundIsbn}! Načítám knihu...`);
+        setOcrSuccessIsbn(foundIsbn);
+        setOcrStatus(`Nalezeno ISBN: ${foundIsbn}! Vyhledávám v katalogu...`);
+        stopAutoScan();
         stopOcrCamera();
         await handleLookup(foundIsbn);
-      } else {
-        setError(
-          'ISBN nebylo v textu rozpoznáno. Ujistěte se, že text "ISBN..." je dobře osvětlený a zaostřený, nebo zadejte kód ručně.'
-        );
+      } else if (isManualClick) {
+        setOcrStatus('ISBN nebylo v rámečku nalezeno. Zkuste zaostřit a držet text přímo v rámečku.');
+        setError('ISBN kód nebyl rozpoznán. Ujistěte se, že text „ISBN ...“ je přímo v rámečku a dobře osvětlen.');
       }
     } catch (err) {
       console.error('OCR selhalo:', err);
-      setError('Chyba při rozpoznávání textu: ' + (err.message || err));
+      if (isManualClick) {
+        setError('Chyba při čtení textu: ' + (err.message || err));
+      }
     } finally {
-      setOcrLoading(false);
+      isOcrProcessingRef.current = false;
+      if (isManualClick) setOcrLoading(false);
     }
   };
 
@@ -211,6 +298,8 @@ export default function ScannerModal({ isOpen, onClose, onBookFound }) {
   const closeAll = () => {
     stopBarcodeCamera();
     stopOcrCamera();
+    terminateOcrWorker();
+    stopAutoScan();
     onClose();
   };
 
@@ -231,7 +320,7 @@ export default function ScannerModal({ isOpen, onClose, onBookFound }) {
               </h2>
               <p className="text-xs text-[#5c3a21]">
                 {viewMode === 'barcode' && 'Čtení čárového kódu fotoaparátem'}
-                {viewMode === 'ocr' && 'Čtení tištěného čísla ISBN bez čárového kódu (OCR)'}
+                {viewMode === 'ocr' && 'Čtení vytištěného textu čísla ISBN (bez čárového kódu)'}
                 {viewMode === 'choose_manual' && 'Vyberte způsob ručního zadání'}
                 {viewMode === 'input_isbn' && 'Zadejte ISBN kód knihy'}
                 {viewMode === 'input_title' && 'Zadejte název knihy'}
@@ -251,6 +340,7 @@ export default function ScannerModal({ isOpen, onClose, onBookFound }) {
           <button
             onClick={() => {
               stopOcrCamera();
+              stopAutoScan();
               setViewMode('barcode');
             }}
             className={`flex-1 py-1.5 rounded-lg flex items-center justify-center space-x-1.5 transition-colors cursor-pointer ${
@@ -271,7 +361,7 @@ export default function ScannerModal({ isOpen, onClose, onBookFound }) {
             }`}
           >
             <Type className="w-4 h-4" />
-            <span>Čtení čísla ISBN (bez kódu)</span>
+            <span>Čtení čísla ISBN (text)</span>
           </button>
         </div>
 
@@ -340,47 +430,83 @@ export default function ScannerModal({ isOpen, onClose, onBookFound }) {
                   muted
                   className="w-full h-full object-cover"
                 />
-                {/* Aiming guidelines */}
-                <div className="absolute inset-x-8 top-1/2 -translate-y-1/2 h-14 border-2 border-dashed border-amber-400 bg-amber-400/10 rounded-lg pointer-events-none flex items-center justify-center">
-                  <span className="text-[11px] font-bold text-amber-300 drop-shadow-md">
-                    Zaměřte na napsané číslo: ISBN ...
-                  </span>
+
+                {/* Shaded top and bottom overlays to highlight target strip */}
+                <div className="absolute inset-x-0 top-0 h-[35%] bg-black/40 pointer-events-none" />
+                <div className="absolute inset-x-0 bottom-0 h-[35%] bg-black/40 pointer-events-none" />
+
+                {/* Target box for ISBN text */}
+                <div className="absolute inset-x-4 top-[35%] h-[30%] border-2 border-dashed border-amber-400 bg-amber-400/10 rounded-lg pointer-events-none flex flex-col items-center justify-center shadow-lg">
+                  {ocrSuccessIsbn ? (
+                    <div className="bg-green-700/90 text-white font-bold text-xs px-3 py-1.5 rounded-md flex items-center space-x-1.5 shadow">
+                      <CheckCircle2 className="w-4 h-4 text-green-200" />
+                      <span>Rozpoznáno: {ocrSuccessIsbn}</span>
+                    </div>
+                  ) : (
+                    <span className="text-[11px] font-bold text-amber-300 drop-shadow-md px-2 text-center">
+                      Umístěte řádek s číslem sem: ISBN ...
+                    </span>
+                  )}
                 </div>
+
+                {/* Live scanner laser line animation */}
+                {!ocrSuccessIsbn && (
+                  <div className="absolute inset-x-4 top-[35%] h-[30%] pointer-events-none overflow-hidden">
+                    <div className="w-full h-0.5 bg-red-500/80 shadow-[0_0_8px_red] animate-pulse absolute top-1/2 -translate-y-1/2" />
+                  </div>
+                )}
               </div>
 
-              {ocrProgress && (
-                <div className="p-2.5 bg-blue-50 border border-blue-200 text-blue-900 rounded-xl text-xs flex items-center justify-center space-x-2">
-                  {ocrLoading && <Loader2 className="w-4 h-4 animate-spin text-blue-700" />}
-                  <span>{ocrProgress}</span>
+              {/* Status and automatic scanning indicator */}
+              <div className="p-2.5 bg-[#efe6d5] border border-[#d7ccc8] text-[#3a2212] rounded-xl text-xs flex items-center justify-between">
+                <div className="flex items-center space-x-2 text-left">
+                  {ocrLoading ? (
+                    <Loader2 className="w-4 h-4 animate-spin text-[#8b2626] shrink-0" />
+                  ) : (
+                    <Zap className="w-4 h-4 text-amber-600 shrink-0" />
+                  )}
+                  <span className="text-[11px] font-medium">{ocrStatus}</span>
                 </div>
-              )}
 
-              <p className="text-xs text-[#5c3a21]">
-                Namiřte kameru na vytištěný text s číslem ISBN na obálce nebo tiráži a stiskněte tlačítko níže:
+                <button
+                  type="button"
+                  onClick={() => setAutoScanEnabled(!autoScanEnabled)}
+                  className={`text-[10px] px-2 py-1 rounded font-bold transition-colors cursor-pointer shrink-0 ${
+                    autoScanEnabled ? 'bg-[#8b2626] text-white' : 'bg-stone-300 text-stone-700'
+                  }`}
+                  title={autoScanEnabled ? 'Vypnout automatické skenování' : 'Zapnout automatické skenování'}
+                >
+                  {autoScanEnabled ? 'Auto-sken: ZAP' : 'Auto-sken: VYP'}
+                </button>
+              </div>
+
+              <p className="text-[11px] text-[#5c3a21] leading-tight">
+                Držte telefon stabilně tak, aby tištěné číslo (např. <em>ISBN 978-80-...</em>) bylo přímo ve žlutém obdélníku. Aplikace skenuje automaticky. Pokud se nedaří, stiskněte tlačítko níže:
               </p>
 
+              {/* Manual shutter button */}
               <button
                 type="button"
-                onClick={captureAndRecognizeIsbn}
-                disabled={ocrLoading}
-                className="w-full py-3 bg-[#8b2626] hover:bg-[#701e1e] active:scale-95 text-white font-bold text-sm rounded-xl shadow-md flex items-center justify-center space-x-2 transition-all cursor-pointer disabled:opacity-50"
+                onClick={() => processOcrFrame(true)}
+                disabled={ocrLoading || !!ocrSuccessIsbn}
+                className="w-full py-3 bg-[#8b2626] hover:bg-[#701e1e] active:scale-95 text-white font-bold text-xs rounded-xl shadow-md flex items-center justify-center space-x-2 transition-all cursor-pointer disabled:opacity-50"
               >
                 {ocrLoading ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin" />
-                    <span>Rozpoznávám číslo ISBN...</span>
+                    <span>Zpracovávám text v rámečku...</span>
                   </>
                 ) : (
                   <>
                     <Camera className="w-4 h-4" />
-                    <span>Přečíst ISBN z textu</span>
+                    <span>Přečíst text v rámečku ihned</span>
                   </>
                 )}
               </button>
 
               {ocrDetectedText && (
-                <div className="text-left bg-[#efe6d5] p-2.5 rounded-xl border border-[#d7ccc8] text-[11px]">
-                  <span className="font-bold text-[#5c3a21] block">Poslední rozpoznaný text:</span>
+                <div className="text-left bg-[#efe6d5]/70 p-2 rounded-xl border border-[#d7ccc8] text-[10px]">
+                  <span className="font-bold text-[#5c3a21] block">Rozpoznaný text v rámečku:</span>
                   <p className="font-mono text-[#3a2212] truncate">{ocrDetectedText}</p>
                 </div>
               )}
