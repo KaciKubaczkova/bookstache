@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert';
-import { extractIsbnFromText } from '../../src/services/isbnParser.js';
+import { extractIsbnFromText, isValidIsbn10, isValidIsbn13 } from '../../src/services/isbnParser.js';
 
 describe('ISBN text extractor', () => {
   it('extracts ISBN-13 with prefix and dashes', () => {
@@ -28,8 +28,31 @@ describe('ISBN text extractor', () => {
     assert.strictEqual(extractIsbnFromText(text), '8020400000');
   });
 
+  it('extracts ISBN with OCR confusion (O instead of 0, l instead of 1)', () => {
+    const text = 'ISBN 978-8O-242-7OOO-5'; // contains letter 'O' instead of zero
+    assert.strictEqual(extractIsbnFromText(text), '9788024270005');
+  });
+
+  it('extracts ISBN with colon and multiple spaces or dot', () => {
+    const text = 'Edice Klasika. ISBN: 978-80-204-4567-8. Vydání první';
+    assert.strictEqual(extractIsbnFromText(text), '9788020445678');
+  });
+
   it('returns null when no ISBN present', () => {
     const text = 'Toto je obyčejný text bez jakéhokoliv čísla';
     assert.strictEqual(extractIsbnFromText(text), null);
+  });
+});
+
+describe('ISBN checksum validators', () => {
+  it('validates correct ISBN-13 checksums', () => {
+    assert.strictEqual(isValidIsbn13('9788024270005'), true);
+    assert.strictEqual(isValidIsbn13('9788024270006'), false);
+  });
+
+  it('validates correct ISBN-10 checksums', () => {
+    assert.strictEqual(isValidIsbn10('807203006X'), true);
+    assert.strictEqual(isValidIsbn10('0306406152'), true);
+    assert.strictEqual(isValidIsbn10('0306406153'), false);
   });
 });
