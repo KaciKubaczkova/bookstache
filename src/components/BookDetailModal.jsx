@@ -1,14 +1,41 @@
-import React from 'react';
-import { X, Book, User, Calendar, Tag, Globe, Users, CheckCircle2, Clock, Barcode, Trash2, Edit3 } from 'lucide-react';
+import React, { useState } from 'react';
+import {
+  X,
+  Book,
+  User,
+  Calendar,
+  Tag,
+  Globe,
+  Users,
+  CheckCircle2,
+  Clock,
+  Barcode,
+  Trash2,
+  Edit3,
+  MoreVertical,
+  Copy,
+  BookOpen
+} from 'lucide-react';
 
-export default function BookDetailModal({ book, isOpen, onClose, role, onToggleStatus, onEdit, onDelete }) {
+export default function BookDetailModal({
+  book,
+  isOpen,
+  onClose,
+  role,
+  onToggleStatus,
+  onEdit,
+  onDelete,
+  onDuplicate,
+  onDifferentEdition
+}) {
+  const [showMenu, setShowMenu] = useState(false);
   if (!isOpen || !book) return null;
 
   const isAvailable = book.status === 'Dostupná';
 
   return (
     <div className="fixed inset-0 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-      <div className="bg-[#f7f3ed] border-2 border-[#8b2626]/30 rounded-2xl max-w-lg w-full p-6 shadow-2xl relative overflow-hidden">
+      <div className="bg-[#f7f3ed] border-2 border-[#8b2626]/30 rounded-2xl max-w-lg w-full p-6 shadow-2xl relative overflow-visible">
         {/* Header */}
         <div className="flex items-start justify-between pb-3 border-b border-[#d7ccc8] mb-4">
           <div className="flex items-center space-x-3">
@@ -40,12 +67,81 @@ export default function BookDetailModal({ book, isOpen, onClose, role, onToggleS
               </h2>
             </div>
           </div>
-          <button
-            onClick={onClose}
-            className="p-1.5 hover:bg-[#efe6d5] text-[#5c3a21] rounded-lg transition-colors cursor-pointer"
-          >
-            <X className="w-5 h-5" />
-          </button>
+
+          <div className="flex items-center space-x-1">
+            {role === 'librarian' && (
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setShowMenu(!showMenu)}
+                  className="p-1.5 hover:bg-[#efe6d5] text-[#5c3a21] rounded-lg transition-colors cursor-pointer"
+                  title="Více možností správy knihy"
+                >
+                  <MoreVertical className="w-5 h-5" />
+                </button>
+
+                {showMenu && (
+                  <div
+                    className="absolute right-0 top-full mt-1 w-52 bg-[#f7f3ed] border border-[#a1887f] rounded-xl shadow-xl z-30 py-1 text-xs text-[#3a2212] font-semibold"
+                    onClick={() => setShowMenu(false)}
+                  >
+                    <button
+                      onClick={() => {
+                        onClose();
+                        onDuplicate && onDuplicate(book);
+                      }}
+                      className="w-full px-3 py-2 text-left hover:bg-[#efe6d5] flex items-center space-x-2 text-[#3a2212]"
+                    >
+                      <Copy className="w-3.5 h-3.5 text-[#8b2626]" />
+                      <span>Duplikovat exemplář</span>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        onClose();
+                        onDifferentEdition && onDifferentEdition(book);
+                      }}
+                      className="w-full px-3 py-2 text-left hover:bg-[#efe6d5] flex items-center space-x-2 text-[#3a2212]"
+                    >
+                      <BookOpen className="w-3.5 h-3.5 text-[#8b2626]" />
+                      <span>Přidat jiné vydání</span>
+                    </button>
+
+                    <div className="border-t border-[#d7ccc8] my-1"></div>
+
+                    <button
+                      onClick={() => {
+                        onClose();
+                        onEdit && onEdit(book);
+                      }}
+                      className="w-full px-3 py-2 text-left hover:bg-[#efe6d5] flex items-center space-x-2 text-[#3a2212]"
+                    >
+                      <Edit3 className="w-3.5 h-3.5 text-[#5c3a21]" />
+                      <span>Upravit knihu</span>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        onClose();
+                        onDelete && onDelete(book.id);
+                      }}
+                      className="w-full px-3 py-2 text-left hover:bg-red-50 text-red-700 flex items-center space-x-2"
+                    >
+                      <Trash2 className="w-3.5 h-3.5 text-red-600" />
+                      <span>Smazat knihu</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            <button
+              onClick={onClose}
+              className="p-1.5 hover:bg-[#efe6d5] text-[#5c3a21] rounded-lg transition-colors cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         {/* Info Grid */}
@@ -110,16 +206,42 @@ export default function BookDetailModal({ book, isOpen, onClose, role, onToggleS
             </div>
 
             <div className="flex space-x-2 pt-1">
+              {onDuplicate && (
+                <button
+                  onClick={() => {
+                    onClose();
+                    onDuplicate(book);
+                  }}
+                  className="flex-1 py-2.5 bg-[#efe6d5] hover:bg-[#e8ddc8] text-[#3a2212] border border-[#a1887f] font-bold rounded-xl text-xs flex items-center justify-center space-x-1.5 cursor-pointer"
+                >
+                  <Copy className="w-3.5 h-3.5 text-[#8b2626]" />
+                  <span>Duplikovat</span>
+                </button>
+              )}
+
+              {onDifferentEdition && (
+                <button
+                  onClick={() => {
+                    onClose();
+                    onDifferentEdition(book);
+                  }}
+                  className="flex-1 py-2.5 bg-[#efe6d5] hover:bg-[#e8ddc8] text-[#3a2212] border border-[#a1887f] font-bold rounded-xl text-xs flex items-center justify-center space-x-1.5 cursor-pointer"
+                >
+                  <BookOpen className="w-3.5 h-3.5 text-[#8b2626]" />
+                  <span>Jiné vydání</span>
+                </button>
+              )}
+
               {onEdit && (
                 <button
                   onClick={() => {
                     onClose();
                     onEdit(book);
                   }}
-                  className="flex-1 py-2.5 bg-[#efe6d5] hover:bg-[#e8ddc8] text-[#3a2212] border border-[#a1887f] font-bold rounded-xl text-xs flex items-center justify-center space-x-1 cursor-pointer"
+                  className="px-3 py-2.5 bg-[#efe6d5] hover:bg-[#e8ddc8] text-[#3a2212] border border-[#a1887f] font-bold rounded-xl text-xs flex items-center justify-center space-x-1 cursor-pointer"
+                  title="Upravit"
                 >
-                  <Edit3 className="w-4 h-4 text-[#8b2626]" />
-                  <span>Upravit informace o knize</span>
+                  <Edit3 className="w-3.5 h-3.5 text-[#5c3a21]" />
                 </button>
               )}
 
@@ -129,10 +251,10 @@ export default function BookDetailModal({ book, isOpen, onClose, role, onToggleS
                     onDelete(book.id);
                     onClose();
                   }}
-                  className="px-4 py-2.5 bg-red-100 hover:bg-red-200 text-red-800 font-bold rounded-xl text-xs flex items-center space-x-1 cursor-pointer"
+                  className="px-3 py-2.5 bg-red-100 hover:bg-red-200 text-red-800 font-bold rounded-xl text-xs flex items-center justify-center space-x-1 cursor-pointer"
+                  title="Smazat"
                 >
-                  <Trash2 className="w-4 h-4" />
-                  <span>Smazat</span>
+                  <Trash2 className="w-3.5 h-3.5" />
                 </button>
               )}
             </div>

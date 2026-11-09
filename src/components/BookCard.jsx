@@ -1,16 +1,42 @@
-import React from 'react';
-import { Book, User, Calendar, Tag, CheckCircle2, Clock, Trash2, Edit3, Globe, Users } from 'lucide-react';
+import React, { useState } from 'react';
+import {
+  Book,
+  User,
+  Calendar,
+  Tag,
+  CheckCircle2,
+  Clock,
+  Trash2,
+  Edit3,
+  MoreVertical,
+  Copy,
+  BookOpen
+} from 'lucide-react';
 
-export default function BookCard({ book, role, onToggleStatus, onClickDetail, onEdit, onDelete }) {
+export default function BookCard({
+  book,
+  role,
+  onToggleStatus,
+  onClickDetail,
+  onEdit,
+  onDelete,
+  onDuplicate,
+  onDifferentEdition
+}) {
   const isAvailable = book.status === 'Dostupná';
+  const [showMenu, setShowMenu] = useState(false);
 
   return (
     <div
       onClick={() => onClickDetail(book)}
-      className="bg-[#efe6d5] border border-[#d7ccc8] hover:border-[#8b2626] rounded-2xl p-4 shadow-sm hover:shadow-md transition-all cursor-pointer flex flex-col justify-between group relative overflow-hidden"
+      className="bg-[#efe6d5] border border-[#d7ccc8] hover:border-[#8b2626] rounded-2xl p-4 shadow-sm hover:shadow-md transition-all cursor-pointer flex flex-col justify-between group relative overflow-visible"
     >
       {/* Decorative top strip */}
-      <div className={`absolute top-0 left-0 right-0 h-1.5 ${isAvailable ? 'bg-emerald-600' : 'bg-amber-600'}`}></div>
+      <div
+        className={`absolute top-0 left-0 right-0 h-1.5 rounded-t-2xl ${
+          isAvailable ? 'bg-emerald-600' : 'bg-amber-600'
+        }`}
+      ></div>
 
       <div>
         {/* Header: Status badge & options */}
@@ -35,11 +61,76 @@ export default function BookCard({ book, role, onToggleStatus, onClickDetail, on
             )}
           </span>
 
-          {book.isbn && (
-            <span className="text-[10px] font-mono text-[#7d5d42] bg-[#f7f3ed] px-2 py-0.5 rounded border border-[#d7ccc8]">
-              ISBN: {book.isbn}
-            </span>
-          )}
+          <div className="flex items-center space-x-1">
+            {book.isbn && (
+              <span className="text-[10px] font-mono text-[#7d5d42] bg-[#f7f3ed] px-2 py-0.5 rounded border border-[#d7ccc8]">
+                ISBN: {book.isbn}
+              </span>
+            )}
+
+            {/* Three-dots menu for librarian */}
+            {role === 'librarian' && (
+              <div
+                className="relative"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowMenu(!showMenu);
+                }}
+              >
+                <button
+                  type="button"
+                  className="p-1 hover:bg-[#d7ccc8] text-[#5c3a21] rounded-lg transition-colors cursor-pointer"
+                  title="Více možností správy knihy"
+                >
+                  <MoreVertical className="w-4 h-4" />
+                </button>
+
+                {showMenu && (
+                  <div
+                    className="absolute right-0 top-full mt-1 w-48 bg-[#f7f3ed] border border-[#a1887f] rounded-xl shadow-xl z-20 py-1 text-xs text-[#3a2212] font-semibold"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowMenu(false);
+                    }}
+                  >
+                    <button
+                      onClick={() => onDuplicate && onDuplicate(book)}
+                      className="w-full px-3 py-2 text-left hover:bg-[#efe6d5] flex items-center space-x-2 text-[#3a2212]"
+                    >
+                      <Copy className="w-3.5 h-3.5 text-[#8b2626]" />
+                      <span>Duplikovat exemplář</span>
+                    </button>
+
+                    <button
+                      onClick={() => onDifferentEdition && onDifferentEdition(book)}
+                      className="w-full px-3 py-2 text-left hover:bg-[#efe6d5] flex items-center space-x-2 text-[#3a2212]"
+                    >
+                      <BookOpen className="w-3.5 h-3.5 text-[#8b2626]" />
+                      <span>Přidat jiné vydání</span>
+                    </button>
+
+                    <div className="border-t border-[#d7ccc8] my-1"></div>
+
+                    <button
+                      onClick={() => onEdit && onEdit(book)}
+                      className="w-full px-3 py-2 text-left hover:bg-[#efe6d5] flex items-center space-x-2 text-[#3a2212]"
+                    >
+                      <Edit3 className="w-3.5 h-3.5 text-[#5c3a21]" />
+                      <span>Upravit knihu</span>
+                    </button>
+
+                    <button
+                      onClick={() => onDelete && onDelete(book.id)}
+                      className="w-full px-3 py-2 text-left hover:bg-red-50 text-red-700 flex items-center space-x-2"
+                    >
+                      <Trash2 className="w-3.5 h-3.5 text-red-600" />
+                      <span>Smazat knihu</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Title */}
@@ -73,7 +164,10 @@ export default function BookCard({ book, role, onToggleStatus, onClickDetail, on
       {/* Footer / Librarian actions */}
       <div className="pt-3 border-t border-[#d7ccc8] flex items-center justify-between gap-2 mt-auto">
         {role === 'librarian' ? (
-          <div className="flex items-center justify-between w-full" onClick={(e) => e.stopPropagation()}>
+          <div
+            className="flex items-center justify-between w-full"
+            onClick={(e) => e.stopPropagation()}
+          >
             <button
               onClick={() => onToggleStatus(book)}
               className={`px-3 py-1.5 rounded-xl font-bold text-xs flex items-center space-x-1 shadow-2xs transition-colors cursor-pointer ${

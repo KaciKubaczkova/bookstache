@@ -12,9 +12,11 @@ import TableModal from './components/TableModal';
 import AuthModal from './components/AuthModal';
 import VintedView from './components/VintedView';
 import EditLibraryModal from './components/EditLibraryModal';
+import DuplicateWarningModal from './components/DuplicateWarningModal';
 import { Scan, BookPlus, Filter, Library, Table as TableIcon } from 'lucide-react';
 import { exportLibraryToExcel } from './services/exportService';
 import { exportLibraryCsv } from './services/storage';
+import { findDuplicateBook } from './services/duplicateService';
 import {
   fetchLibraryExemplars,
   saveLibraryExemplar,
@@ -37,6 +39,9 @@ export default function App() {
   const [showTableModal, setShowTableModal] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showEditLibraryModal, setShowEditLibraryModal] = useState(false);
+
+  // Duplicate detection state
+  const [duplicateWarning, setDuplicateWarning] = useState(null); // { existingBook, pendingAction }
 
   const [scannedBookData, setScannedBookData] = useState(null);
   const [editingBook, setEditingBook] = useState(null);
@@ -75,9 +80,6 @@ export default function App() {
       setActiveTab('vinted');
     } else {
       setActiveTab('library');
-      if (!role) {
-        // Will render RoleSelect next
-      }
     }
   };
 
@@ -91,11 +93,24 @@ export default function App() {
     setShowLibraryModal(false);
   };
 
-  const handleBookFoundFromScanner = (bookData) => {
+  const proceedOpenBookForm = (bookData) => {
     setScannedBookData(bookData);
     setEditingBook(null);
     setShowScannerModal(false);
     setShowBookFormModal(true);
+  };
+
+  const handleBookFoundFromScanner = (bookData) => {
+    // Check for duplicate in current library
+    const dup = findDuplicateBook(books, bookData);
+    if (dup) {
+      setDuplicateWarning({
+        existingBook: dup.book,
+        pendingAction: () => proceedOpenBookForm(bookData)
+      });
+    } else {
+      proceedOpenBookForm(bookData);
+    }
   };
 
   const handleEditBookClick = (book) => {
@@ -104,8 +119,63 @@ export default function App() {
     setShowBookFormModal(true);
   };
 
-  const handleSaveBook = async (formData) => {
+  // 1. Duplicate Exemplar: adds another copy with status 'Dostupná'
+  const handleDuplicateBook = async (book) => {
     if (!currentLibrary) return;
+    const confirmed = window.confirm(
+      `Přejete si vytvořit další exemplář knihy "${book.title}" v této knihovně?`
+    );
+    if (!confirmed) return;
+
+    try {
+      await saveLibraryExemplar(currentLibrary.id, {
+        title: book.title,
+        author: book.author || '',
+        isbn: book.isbn || '',
+        year: book.year || '',
+        genre: book.genre || '',
+        language: book.language || 'Čeština',
+        status: 'Dostupná',
+        notes: book.notes ? `${book.notes} (Duplikát)` : 'Kopie / další exemplář',
+        libraryName: currentLibrary.name
+      });
+      fetchBooks();
+    } catch (err) {
+      alert('Chyba při duplikaci knihy: ' + err.message);
+    }
+  };
+
+  // 2. Different Edition: opens form prefilled with book details so user can modify year, isbn, etc.
+  const handleDifferentEdition = (book) => {
+    setEditingBook(null); // Not editing original book, saving a new one
+    setScannedBookData({
+      title: book.title,
+      author: book.author || '',
+      isbn: '', // Clear ISBN to allow new edition ISBN
+      year: book.year || '',
+      genre: book.genre || '',
+      language: book.language || 'Čeština',
+      status: 'Dostupná',
+      notes: `Jiné vydání knihy "${book.title}"`
+    });
+    setShowBookFormModal(true);
+  };
+
+  const handleSaveBook = async (formData, skipDuplicateCheck = false) => {
+    if (!currentLibrary) return;
+
+    // Check duplicate on save if creating a new book and check not skipped
+    if (!editingBook && !skipDuplicateCheck) {
+      const dup = findDuplicateBook(books, formData);
+      if (dup) {
+        setDuplicateWarning({
+          existingBook: dup.book,
+          pendingAction: () => handleSaveBook(formData, true)
+        });
+        return;
+      }
+    }
+
     try {
       if (editingBook) {
         await updateExemplarDetails(editingBook.id, formData);
@@ -256,13 +326,13 @@ export default function App() {
 
                 <div className="max-w-md mx-auto">
                   <span className="inline-block text-xs font-bold text-[#8b2626] uppercase tracking-wider bg-[#8b2626]/10 px-3 py-1 rounded-full mb-3">
-                    Rychlé skenování knih do knihovny
+                    Rychlé přidávání a správa knih
                   </span>
                   <h2 className="text-2xl font-serif font-bold text-[#3a2212] mb-1">
                     Přidat novou knihu
                   </h2>
                   <p className="text-xs text-[#5c3a21] mb-6">
-                    Naskenujte čárový kód čtečkou/fotoaparátem nebo zadejte kód ISBN
+                    Skenujte čárový kód, čtěte tištěné ISBN fotoaparátem nebo zadejte knihu ručně
                   </p>
 
                   <button
@@ -270,7 +340,7 @@ export default function App() {
                     className="w-full max-w-xs mx-auto py-4 px-6 bg-[#8b2626] hover:bg-[#701e1e] active:scale-95 text-white font-bold text-lg rounded-2xl shadow-xl flex items-center justify-center space-x-3 transition-all cursor-pointer group"
                   >
                     <Scan className="w-8 h-8 group-hover:scale-110 transition-transform" />
-                    <span>Naskenovat</span>
+                    <span>Naskenovat / Přidat</span>
                   </button>
                 </div>
               </div>
@@ -397,7 +467,7 @@ export default function App() {
                     onClick={() => setShowScannerModal(true)}
                     className="px-5 py-2.5 bg-[#8b2626] text-white font-bold rounded-xl text-xs shadow-md cursor-pointer hover:bg-[#701e1e] transition-colors"
                   >
-                    Naskenovat první knihu
+                    Přidat první knihu
                   </button>
                 )}
               </div>
@@ -415,6 +485,8 @@ export default function App() {
                     }}
                     onEdit={role === 'librarian' ? handleEditBookClick : null}
                     onDelete={role === 'librarian' ? handleDeleteBook : null}
+                    onDuplicate={role === 'librarian' ? handleDuplicateBook : null}
+                    onDifferentEdition={role === 'librarian' ? handleDifferentEdition : null}
                   />
                 ))}
               </div>
@@ -489,6 +561,8 @@ export default function App() {
         onToggleStatus={handleToggleStatus}
         onEdit={role === 'librarian' ? handleEditBookClick : null}
         onDelete={role === 'librarian' ? handleDeleteBook : null}
+        onDuplicate={role === 'librarian' ? handleDuplicateBook : null}
+        onDifferentEdition={role === 'librarian' ? handleDifferentEdition : null}
       />
 
       <TableModal
@@ -518,6 +592,19 @@ export default function App() {
           setCurrentLibrary(null);
           setBooks([]);
           setShowLibraryModal(true);
+        }}
+      />
+
+      <DuplicateWarningModal
+        isOpen={Boolean(duplicateWarning)}
+        existingBook={duplicateWarning?.existingBook}
+        onConfirm={() => {
+          const action = duplicateWarning?.pendingAction;
+          setDuplicateWarning(null);
+          if (action) action();
+        }}
+        onCancel={() => {
+          setDuplicateWarning(null);
         }}
       />
     </div>
