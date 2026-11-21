@@ -142,8 +142,8 @@ function normalizeGenres(values) {
   if (/horror|horor/.test(text)) add('Horor');
   if (/historical|historick/.test(text)) add('Historický román');
   if (/contemporary|modern.{0,20}romance|současn/.test(text)) add('Současný román');
-  if (/young adult|\bya\b|teenage|adolescent|\byf\b/.test(text)) add('Young Adult');
-  if (/adult fiction|adult romance|new adult|\badult\b/.test(text)) add('Adult');
+  // Young Adult / New Adult / Adult describe the intended readership,
+  // not the book's genre, so they are intentionally not added here.
   if (/fiction|beletrie|literatura/.test(text) && !genres.length) add('Beletrie');
   return genres.slice(0, 4).join(', ');
 }
