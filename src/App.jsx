@@ -309,7 +309,7 @@ export default function App() {
       />
 
       {/* Main Content Area */}
-      <main className="flex-1 max-w-5xl w-full mx-auto p-4 sm:p-6 space-y-6">
+      <main className="flex-1 max-w-screen-2xl w-full mx-auto px-3 py-4 sm:px-6 sm:py-6 lg:px-8 space-y-5 sm:space-y-6">
         {activeTab === 'vinted' ? (
           <VintedView
             onOpenAuthModal={() => setShowAuthModal(true)}
