@@ -114,7 +114,7 @@ export async function lookupBookByIsbnOrTitle(query) {
   let knihovnyData = null;
   try {
     const qParam = isIsbn ? `lookfor=${isbnClean}&type=ISN` : `lookfor=${encodeURIComponent(cleanQuery)}&type=AllFields`;
-    const res = await fetch(`https://www.knihovny.cz/api/v1/search?${qParam}&limit=5`, {
+    const res = await fetch(`https://www.knihovny.cz/api/v1/search?${qParam}&limit=20`, {
       headers: { 'Accept': 'application/json' }
     });
     if (res.ok) {
@@ -154,7 +154,7 @@ export async function lookupBookByIsbnOrTitle(query) {
   let googleData = null;
   try {
     const qParam = isIsbn ? `isbn:${isbnClean}` : encodeURIComponent(cleanQuery);
-    const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${qParam}&maxResults=5`);
+    const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${qParam}&maxResults=40`);
     if (res.ok) {
       googleData = await res.json();
     }
@@ -171,11 +171,18 @@ export async function lookupBookByIsbnOrTitle(query) {
         openLibraryData = json[`ISBN:${isbnClean}`];
       }
     } else {
-      const res = await fetch(`https://openlibrary.org/search.json?q=${encodeURIComponent(cleanQuery)}&limit=5`);
+      const res = await fetch(`https://openlibrary.org/search.json?q=${encodeURIComponent(cleanQuery)}&limit=100`);
       if (res.ok) {
         const json = await res.json();
         if (json.docs && json.docs.length > 0) {
-          openLibraryData = json.docs[0];
+          const exactOpenLibraryDoc = isIsbn
+            ? json.docs.find((doc) =>
+                (doc.isbn || []).some((value) =>
+                  String(value).replace(/[^0-9X]/gi, '').toUpperCase() === isbnClean.toUpperCase()
+                )
+              )
+            : null;
+          openLibraryData = exactOpenLibraryDoc || json.docs[0];
         }
       }
     }
