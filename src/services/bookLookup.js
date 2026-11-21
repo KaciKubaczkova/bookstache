@@ -121,7 +121,7 @@ export async function lookupBookByIsbnOrTitle(query) {
   let knihovnyData = null;
   try {
     const qParam = isIsbn ? `lookfor=${isbnClean}&type=ISN` : `lookfor=${encodeURIComponent(cleanQuery)}&type=AllFields`;
-    const res = await fetch(`https://www.knihovny.cz/api/v1/search?${qParam}&limit=5`, {
+    const res = await fetch(`https://www.knihovny.cz/api/v1/search?${qParam}&limit=20`, {
       headers: { 'Accept': 'application/json' }
     });
     if (res.ok) {
@@ -162,7 +162,7 @@ export async function lookupBookByIsbnOrTitle(query) {
   let googleData = null;
   try {
     const qParam = isIsbn ? `isbn:${isbnClean}` : encodeURIComponent(cleanQuery);
-    const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${qParam}&maxResults=5`);
+    const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${qParam}&maxResults=40`);
     if (res.ok) {
       googleData = await res.json();
     }
@@ -183,11 +183,16 @@ export async function lookupBookByIsbnOrTitle(query) {
 
       // If bibkeys had no data, try search endpoint with ISBN
       if (!openLibraryData) {
-        const resSearch = await fetch(`https://openlibrary.org/search.json?q=isbn:${isbnClean}&limit=5`);
+        const resSearch = await fetch(`https://openlibrary.org/search.json?q=isbn:${isbnClean}&limit=100`);
         if (resSearch.ok) {
           const jsonSearch = await resSearch.json();
           if (jsonSearch.docs && jsonSearch.docs.length > 0) {
-            openLibraryData = jsonSearch.docs[0];
+            const exactOpenLibraryDoc = jsonSearch.docs.find((doc) =>
+              (doc.isbn || []).some((value) =>
+                String(value).replace(/[^0-9X]/gi, '').toUpperCase() === isbnClean.toUpperCase()
+              )
+            );
+            openLibraryData = exactOpenLibraryDoc || jsonSearch.docs[0];
           }
         }
       }
@@ -196,7 +201,14 @@ export async function lookupBookByIsbnOrTitle(query) {
       if (res.ok) {
         const json = await res.json();
         if (json.docs && json.docs.length > 0) {
-          openLibraryData = json.docs[0];
+          const exactOpenLibraryDoc = isIsbn
+            ? json.docs.find((doc) =>
+                (doc.isbn || []).some((value) =>
+                  String(value).replace(/[^0-9X]/gi, '').toUpperCase() === isbnClean.toUpperCase()
+                )
+              )
+            : null;
+          openLibraryData = exactOpenLibraryDoc || json.docs[0];
         }
       }
     }
