@@ -253,7 +253,9 @@ export async function lookupBookByIsbnOrTitle(query) {
       bookInfo.genre = normalizeGenres(item.categories || []);
     }
 
-    if (!bookInfo.publisher) bookInfo.publisher = item.publisher || '';\n\n    if (!bookInfo.language && matchingLanguage) {
+    if (!bookInfo.publisher) bookInfo.publisher = item.publisher || '';
+
+    if (!bookInfo.language && matchingLanguage) {
       bookInfo.language = matchingLanguage;
     }
 
