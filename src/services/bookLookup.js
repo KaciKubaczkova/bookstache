@@ -192,8 +192,9 @@ export async function lookupBookByIsbnOrTitle(query) {
     if (exactKnihovnyRecord) {
       bookInfo.language = extractLanguageValue(exactKnihovnyRecord.languages || exactKnihovnyRecord.language);
     }
-    bookInfo.publisher = rec.publisher || rec.publishers?.[0] || rec.publisherName || '';
-    bookInfo.genre = normalizeGenres(rec.genres || rec.genre || []);
+    const metadataRecord = exactKnihovnyRecord || (!isIsbn ? rec : null);
+    bookInfo.publisher = metadataRecord?.publisher || metadataRecord?.publishers?.[0] || metadataRecord?.publisherName || '';
+    bookInfo.genre = normalizeGenres((metadataRecord || rec).genres || (metadataRecord || rec).genre || []);
   }
 
   // 2. Try Google Books API
