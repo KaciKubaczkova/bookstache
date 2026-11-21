@@ -21,6 +21,7 @@ export default function BookFormModal({ isOpen, initialData, onClose, onSave, li
     year: '',
     genre: '',
     language: '',
+    publisher: '',
     status: 'Dostupná',
     notes: ''
   });
@@ -44,6 +45,7 @@ export default function BookFormModal({ isOpen, initialData, onClose, onSave, li
         year: initialData.year || '',
         genre: initialData.genre || '',
         language: lang,
+        publisher: initialData.publisher || '',
         status: initialData.status || 'Dostupná',
         notes: initialData.notes || ''
       });
@@ -68,6 +70,7 @@ export default function BookFormModal({ isOpen, initialData, onClose, onSave, li
         year: '',
         genre: '',
         language: '',
+        publisher: '',
         status: 'Dostupná',
         notes: ''
       });
@@ -103,18 +106,14 @@ export default function BookFormModal({ isOpen, initialData, onClose, onSave, li
       return;
     }
 
-    if (!formData.language.trim()) {
-      setError('Prosím vyberte nebo zadejte jazyk knihy.');
-      return;
-    }
-
     setSaving(true);
     setError('');
     try {
       await onSave({
         ...formData,
         title: formData.title.trim(),
-        language: formData.language.trim()
+        language: formData.language.trim(),
+        publisher: formData.publisher.trim()
       });
     } catch (err) {
       setError(err.message || 'Chyba při ukládání knihy');
@@ -251,7 +250,19 @@ export default function BookFormModal({ isOpen, initialData, onClose, onSave, li
           </div>
 
           <div className="grid grid-cols-2 gap-3">
-            {/* ISBN */}
+            {/* Nakladatelství */}
+          <div>
+            <label className="block text-[#5c3a21] mb-1 font-bold">Nakladatelství</label>
+            <input
+              type="text"
+              value={formData.publisher}
+              onChange={(e) => setFormData({ ...formData, publisher: e.target.value })}
+              placeholder="Např. Piatkus Books"
+              className="w-full p-2.5 text-sm bg-[#efe6d5] border border-[#a1887f] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#8b2626]"
+            />
+          </div>
+
+          {/* ISBN */}
             <div>
               <label className="block text-[#5c3a21] mb-1 font-bold">
                 ISBN číslo
