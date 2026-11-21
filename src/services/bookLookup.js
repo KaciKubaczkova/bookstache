@@ -259,24 +259,27 @@ export async function lookupBookByIsbnOrTitle(query) {
         String(identifier || '').replace(/[^0-9X]/gi, '').toUpperCase() === isbnClean.toUpperCase()
       )
     ) : null;
-    const item = (exactGoogleItem || googleData.items[0]).volumeInfo;
-    if (!bookInfo.title) {
+    // ISBN lookups must never borrow edition-specific metadata from a merely similar result.
+    // If Google Books does not return the exact ISBN, let other exact-ISBN sources fill the gaps.
+    const selectedGoogleItem = isIsbn ? exactGoogleItem : googleData.items[0];
+    const item = selectedGoogleItem?.volumeInfo;
+    if (item && !bookInfo.title) {
       bookInfo.title = item.title || '';
       if (item.subtitle) {
         bookInfo.title += `: ${item.subtitle}`;
       }
     }
-    if (!bookInfo.author) {
+    if (item && !bookInfo.author) {
       bookInfo.author = item.authors ? item.authors.join(', ') : '';
     }
-    if (!bookInfo.year) {
+    if (item && !bookInfo.year) {
       bookInfo.year = item.publishedDate ? item.publishedDate.substring(0, 4) : '';
     }
-    if (!bookInfo.genre) {
+    if (item && !bookInfo.genre) {
       bookInfo.genre = normalizeGenres(item.categories || []);
     }
 
-    if (!bookInfo.publisher) bookInfo.publisher = item.publisher || '';
+    if (item && !bookInfo.publisher) bookInfo.publisher = item.publisher || '';
 
     if (!bookInfo.language && matchingLanguage) {
       bookInfo.language = matchingLanguage;
@@ -284,7 +287,7 @@ export async function lookupBookByIsbnOrTitle(query) {
 
     if (isIsbn && !bookInfo.isbn) {
       bookInfo.isbn = isbnClean;
-    } else if (!bookInfo.isbn && item.industryIdentifiers) {
+    } else if (!bookInfo.isbn && item?.industryIdentifiers) {
       const isbnObj = item.industryIdentifiers.find(
         (i) => i.type === 'ISBN_13' || i.type === 'ISBN_10'
       );
