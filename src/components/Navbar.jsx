@@ -17,7 +17,7 @@ export default function Navbar({
 
   return (
     <header className="bg-[#5c3a21] text-[#efe6d5] sticky top-0 z-30 shadow-md border-b-2 border-[#8b2626]">
-      <div className="max-w-5xl mx-auto px-4 py-2.5 flex flex-wrap items-center justify-between gap-3">
+      <div className="max-w-screen-2xl mx-auto px-4 py-2.5 flex flex-wrap items-center justify-between gap-3">
         {/* Left Side: Category Menu & App Title */}
         <div className="flex items-center space-x-3">
           <button
@@ -52,10 +52,10 @@ export default function Navbar({
         </div>
 
         {/* Center: Main View Tabs */}
-        <div className="flex items-center bg-[#422917] p-1 rounded-xl border border-[#a1887f]/30">
+        <div className="flex items-center bg-[#422917] p-1 rounded-xl border border-[#a1887f]/30 max-w-full overflow-x-auto">
           <button
             onClick={() => onTabChange('library')}
-            className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-colors cursor-pointer flex items-center space-x-1.5 ${
+            className={`px-2.5 sm:px-3 py-2 text-xs font-bold rounded-lg transition-colors cursor-pointer flex items-center space-x-1.5 whitespace-nowrap ${
               activeTab === 'library'
                 ? 'bg-[#8b2626] text-white shadow-xs'
                 : 'text-[#d7ccc8] hover:text-white'
@@ -79,7 +79,7 @@ export default function Navbar({
         </div>
 
         {/* Search input */}
-        <div className="flex-1 max-w-xs sm:max-w-xs mx-1 order-3 sm:order-none w-full sm:w-auto">
+        <div className="flex-1 min-w-full sm:min-w-0 sm:max-w-xs mx-0 sm:mx-1 order-3 sm:order-none w-full sm:w-auto">
           <div className="relative">
             <Search className="w-3.5 h-3.5 text-[#a1887f] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input
