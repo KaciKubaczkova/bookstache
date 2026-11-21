@@ -336,7 +336,7 @@ export async function fetchVintedExemplars(filters = {}) {
         isbn: bookTitle.isbn || exData.isbn || '',
         genre: bookTitle.genre || exData.genre || '',
         year: bookTitle.year || exData.year || '',
-        language: bookTitle.language || exData.language || 'Čeština',
+        language: bookTitle.language || exData.language || '',
         coverUrl: exData.coverUrl || bookTitle.coverUrl || ''
       };
 
