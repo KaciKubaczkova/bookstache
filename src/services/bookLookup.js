@@ -69,6 +69,35 @@ function mapLanguageCode(lang) {
   return match ? match[1] : '';
 }
 
+
+function extractLanguageValue(value) {
+  if (!value) return '';
+  if (Array.isArray(value)) {
+    for (const entry of value) {
+      const language = extractLanguageValue(entry);
+      if (language) return language;
+    }
+    return '';
+  }
+  if (typeof value === 'object') {
+    return mapLanguageCode(value.code || value.lang || value.key || value.name || value.value || '');
+  }
+  return mapLanguageCode(value);
+}
+
+function getGoogleBookLanguage(items, isbn) {
+  if (!Array.isArray(items) || !items.length) return '';
+  const normalizedIsbn = String(isbn || '').replace(/[^0-9X]/gi, '').toUpperCase();
+  const exactItem = normalizedIsbn
+    ? items.find(({ volumeInfo = {} }) =>
+        (volumeInfo.industryIdentifiers || []).some(({ identifier }) =>
+          String(identifier || '').replace(/[^0-9X]/gi, '').toUpperCase() === normalizedIsbn
+        )
+      )
+    : items[0];
+  return extractLanguageValue(exactItem?.volumeInfo?.language);
+}
+
 export async function lookupBookByIsbnOrTitle(query) {
   if (!query || !query.trim()) {
     throw new Error('Zadejte ISBN kód nebo název knihy');
@@ -171,7 +200,13 @@ export async function lookupBookByIsbnOrTitle(query) {
 
   // Parse Google Books response
   if (googleData && googleData.items && googleData.items.length > 0) {
-    const item = googleData.items[0].volumeInfo;
+    const matchingLanguage = getGoogleBookLanguage(googleData.items, isIsbn ? isbnClean : '');
+    const exactGoogleItem = isIsbn ? googleData.items.find(({ volumeInfo = {} }) =>
+      (volumeInfo.industryIdentifiers || []).some(({ identifier }) =>
+        String(identifier || '').replace(/[^0-9X]/gi, '').toUpperCase() === isbnClean.toUpperCase()
+      )
+    ) : null;
+    const item = (exactGoogleItem || googleData.items[0]).volumeInfo;
     if (!bookInfo.title) {
       bookInfo.title = item.title || '';
       if (item.subtitle) {
@@ -188,8 +223,8 @@ export async function lookupBookByIsbnOrTitle(query) {
       bookInfo.genre = item.categories ? item.categories.join(', ') : '';
     }
 
-    if (!bookInfo.language && item.language) {
-      bookInfo.language = mapLanguageCode(item.language);
+    if (!bookInfo.language && matchingLanguage) {
+      bookInfo.language = matchingLanguage;
     }
 
     if (isIsbn && !bookInfo.isbn) {
@@ -229,12 +264,8 @@ export async function lookupBookByIsbnOrTitle(query) {
         .map((s) => (typeof s === 'string' ? s : s.name));
       bookInfo.genre = subjs.join(', ');
     }
-    if (!bookInfo.language && openLibraryData.languages) {
-      const langObj = openLibraryData.languages[0];
-      const langStr = typeof langObj === 'string' ? langObj : (langObj.key || langObj.name || '');
-      if (langStr) {
-        bookInfo.language = mapLanguageCode(langStr.replace('/languages/', ''));
-      }
+    if (!bookInfo.language && (openLibraryData.languages || openLibraryData.language)) {
+      bookInfo.language = extractLanguageValue(openLibraryData.languages || openLibraryData.language);
     }
   }
 
