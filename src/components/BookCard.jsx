@@ -152,6 +152,11 @@ export default function BookCard({
               {book.year}
             </span>
           )}
+          {book.publisher && (
+            <span className="bg-[#f7f3ed] px-2 py-0.5 rounded-md border border-[#d7ccc8]">
+              {book.publisher}
+            </span>
+          )}
           {book.genre && (
             <span className="bg-[#f7f3ed] px-2 py-0.5 rounded-md border border-[#d7ccc8] flex items-center gap-1">
               <Tag className="w-3 h-3 text-[#7d5d42]" />
