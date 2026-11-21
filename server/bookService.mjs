@@ -96,6 +96,46 @@ function getGoogleBookLanguage(items, isbn) {
   return extractLanguageValue(exactItem?.volumeInfo?.language);
 }
 
+
+function normalizeIsbn(value) {
+  return String(value || '').replace(/[^0-9X]/gi, '').toUpperCase();
+}
+
+function recordHasExactIsbn(record, isbn) {
+  const target = normalizeIsbn(isbn);
+  if (!target) return false;
+  const candidates = [
+    record?.isbn, record?.isbn13, record?.isbn10, record?.isbnNumber,
+    record?.ean, record?.identifiers?.isbn, record?.identifiers?.ISBN,
+    record?.isbns, record?.ISBN
+  ];
+  const flatten = (value) => Array.isArray(value) ? value.flatMap(flatten)
+    : value && typeof value === 'object' ? Object.values(value).flatMap(flatten)
+    : value == null ? [] : [value];
+  return flatten(candidates).some((value) => normalizeIsbn(value) === target);
+}
+
+function normalizeGenres(values) {
+  const list = Array.isArray(values) ? values : values ? [values] : [];
+  const text = list.map((value) => typeof value === 'string' ? value : value?.name || value?.value || '')
+    .filter(Boolean).join(' | ').toLowerCase();
+  const genres = [];
+  const add = (label) => { if (!genres.includes(label)) genres.push(label); };
+  if (/romance|romantick|román pro ženy|love stor/.test(text)) add('Romantika');
+  if (/fantasy|fantastick/.test(text)) add('Fantasy');
+  if (/science fiction|\bsci[- ]?fi\b/.test(text)) add('Sci-fi');
+  if (/thriller|suspense|napětí/.test(text)) add('Thriller');
+  if (/mystery|detective|krimi|detektiv/.test(text)) add('Detektivka');
+  if (/horror|horor/.test(text)) add('Horor');
+  if (/historical|historick/.test(text)) add('Historický román');
+  if (/contemporary|současn/.test(text)) add('Současná literatura');
+  if (/young adult|\bya\b|teenage|adolescent/.test(text)) add('Young Adult');
+  if (/adult fiction|adult romance|new adult|\badult\b/.test(text)) add('Adult');
+  if (/children|juvenile|dětsk/.test(text)) add('Pro děti');
+  if (/fiction|beletrie|literatura/.test(text) && !genres.length) add('Beletrie');
+  return genres.slice(0, 4).join(', ');
+}
+
 export async function lookupBookByIsbnOrTitle(query) {
   const cleanQuery = query.trim();
   const isIsbn = /^[0-9xX\-]{9,17}$/.test(cleanQuery.replace(/\s+/g, ''));
@@ -108,6 +148,7 @@ export async function lookupBookByIsbnOrTitle(query) {
     year: '',
     genre: '',
     language: '',
+    publisher: '',
     notes: ''
   };
 
@@ -137,18 +178,15 @@ export async function lookupBookByIsbnOrTitle(query) {
     if (rec.publishDate && Array.isArray(rec.publishDate) && rec.publishDate.length > 0) {
       bookInfo.year = String(rec.publishDate[0]);
     }
-    // Knihovny.cz can return language as a code, label, object or an array.
-    // Check all ISBN search records because the first catalogue hit may omit it.
-    for (const record of knihovnyData.records || []) {
-      const detectedLanguage = extractLanguageValue(record.languages || record.language);
-      if (detectedLanguage) {
-        bookInfo.language = detectedLanguage;
-        break;
-      }
+    // For ISBN searches, never take language from a different edition.
+    const exactKnihovnyRecord = isIsbn
+      ? (knihovnyData.records || []).find((record) => recordHasExactIsbn(record, isbnClean))
+      : rec;
+    if (exactKnihovnyRecord) {
+      bookInfo.language = extractLanguageValue(exactKnihovnyRecord.languages || exactKnihovnyRecord.language);
     }
-    if (rec.genres && Array.isArray(rec.genres) && rec.genres.length > 0) {
-      bookInfo.genre = rec.genres.slice(0, 3).join(', ');
-    }
+    bookInfo.publisher = rec.publisher || rec.publishers?.[0] || rec.publisherName || '';
+    bookInfo.genre = normalizeGenres(rec.genres || rec.genre || []);
   }
 
   let googleData = null;
@@ -211,10 +249,10 @@ export async function lookupBookByIsbnOrTitle(query) {
       bookInfo.year = item.publishedDate ? item.publishedDate.substring(0, 4) : '';
     }
     if (!bookInfo.genre) {
-      bookInfo.genre = item.categories ? item.categories.join(', ') : '';
+      bookInfo.genre = normalizeGenres(item.categories || []);
     }
 
-    if (!bookInfo.language && matchingLanguage) {
+    if (!bookInfo.publisher) bookInfo.publisher = item.publisher || '';\n\n    if (!bookInfo.language && matchingLanguage) {
       bookInfo.language = matchingLanguage;
     }
 
@@ -246,9 +284,9 @@ export async function lookupBookByIsbnOrTitle(query) {
     }
     if (!bookInfo.genre && openLibraryData.subjects) {
       const subjs = openLibraryData.subjects.slice(0, 3).map(s => typeof s === 'string' ? s : s.name);
-      bookInfo.genre = subjs.join(', ');
+      bookInfo.genre = normalizeGenres(subjs);
     }
-    if (!bookInfo.language && (openLibraryData.languages || openLibraryData.language)) {
+    if (!bookInfo.publisher && openLibraryData.publishers) {\n      bookInfo.publisher = openLibraryData.publishers.map((p) => p.name || p).join(', ');\n    }\n    if (!bookInfo.language && (openLibraryData.languages || openLibraryData.language)) {
       bookInfo.language = extractLanguageValue(openLibraryData.languages || openLibraryData.language);
     }
   }
