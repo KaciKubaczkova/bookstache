@@ -118,9 +118,19 @@ function recordHasExactIsbn(record, isbn) {
 }
 
 function normalizeGenres(values) {
-  const list = Array.isArray(values) ? values : values ? [values] : [];
-  const text = list.map((value) => typeof value === 'string' ? value : value?.name || value?.value || '')
-    .filter(Boolean).join(' | ').toLowerCase();
+  // VuFind/Knihovny.cz returns subjects as nested arrays; Google Books and
+  // Open Library use flat arrays. Normalize both shapes before matching.
+  const flattenLabels = (value) => {
+    if (value == null) return [];
+    if (Array.isArray(value)) return value.flatMap(flattenLabels);
+    if (typeof value === 'string' || typeof value === 'number') return [String(value)];
+    if (typeof value === 'object') {
+      return ['name', 'value', 'label', 'heading', 'term', 'topic']
+        .flatMap((key) => value[key] == null ? [] : flattenLabels(value[key]));
+    }
+    return [];
+  };
+  const text = flattenLabels(values).filter(Boolean).join(' | ').toLowerCase();
   const genres = [];
   const add = (label) => { if (!genres.includes(label)) genres.push(label); };
   // BIC subject codes and English catalogue labels are both common in publisher metadata.
@@ -197,7 +207,11 @@ export async function lookupBookByIsbnOrTitle(query) {
     }
     const metadataRecord = exactKnihovnyRecord || (!isIsbn ? rec : null);
     bookInfo.publisher = metadataRecord?.publisher || metadataRecord?.publishers?.[0] || metadataRecord?.publisherName || '';
-    bookInfo.genre = normalizeGenres((metadataRecord || rec).genres || (metadataRecord || rec).genre || []);
+    const record = metadataRecord || rec;
+    bookInfo.genre = normalizeGenres(
+      record.genres || record.genre || record.subjects || record.subjectsExtended ||
+      record.genre_facet || record.categories || []
+    );
   }
 
   // 2. Try Google Books API
