@@ -41,7 +41,15 @@ export async function getOrCreateBookTitle(bookData) {
       const snap = await getDocs(q);
       if (!snap.empty) {
         const existingDoc = snap.docs[0];
-        return { id: existingDoc.id, ...existingDoc.data() };
+        const existingData = existingDoc.data();
+        const updates = {};
+        for (const field of ['title', 'author', 'genre', 'year', 'language', 'publisher', 'coverUrl']) {
+          if (bookData[field] && bookData[field] !== existingData[field]) updates[field] = bookData[field];
+        }
+        if (Object.keys(updates).length) {
+          await updateDoc(doc(db, BOOKS_COL, existingDoc.id), updates);
+        }
+        return { id: existingDoc.id, ...existingData, ...updates };
       }
     } else {
       // Query by exact title & author
@@ -63,7 +71,8 @@ export async function getOrCreateBookTitle(bookData) {
       author: (bookData.author || '').trim(),
       genre: bookData.genre || '',
       year: bookData.year || '',
-      language: bookData.language || 'Čeština',
+      language: bookData.language || '',
+      publisher: bookData.publisher || '',
       coverUrl: bookData.coverUrl || '',
       createdAt: new Date().toISOString()
     };
@@ -227,7 +236,7 @@ export async function fetchLibraryExemplars(libraryId) {
         isbn: bookTitle.isbn || exData.isbn || '',
         genre: bookTitle.genre || exData.genre || '',
         year: bookTitle.year || exData.year || '',
-        language: bookTitle.language || exData.language || 'Čeština',
+        language: bookTitle.language || exData.language || '',
         coverUrl: exData.coverUrl || bookTitle.coverUrl || ''
       });
     }
@@ -327,7 +336,7 @@ export async function fetchVintedExemplars(filters = {}) {
         isbn: bookTitle.isbn || exData.isbn || '',
         genre: bookTitle.genre || exData.genre || '',
         year: bookTitle.year || exData.year || '',
-        language: bookTitle.language || exData.language || 'Čeština',
+        language: bookTitle.language || exData.language || '',
         coverUrl: exData.coverUrl || bookTitle.coverUrl || ''
       };
 

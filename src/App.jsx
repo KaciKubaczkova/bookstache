@@ -134,7 +134,7 @@ export default function App() {
         isbn: book.isbn || '',
         year: book.year || '',
         genre: book.genre || '',
-        language: book.language || 'Čeština',
+        language: book.language || '',
         status: 'Dostupná',
         notes: book.notes ? `${book.notes} (Duplikát)` : 'Kopie / další exemplář',
         libraryName: currentLibrary.name
@@ -154,7 +154,7 @@ export default function App() {
       isbn: '', // Clear ISBN to allow new edition ISBN
       year: book.year || '',
       genre: book.genre || '',
-      language: book.language || 'Čeština',
+      language: book.language || '',
       status: 'Dostupná',
       notes: `Jiné vydání knihy "${book.title}"`
     });

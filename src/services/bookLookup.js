@@ -234,7 +234,7 @@ export async function lookupBookByIsbnOrTitle(query) {
                 String(value).replace(/[^0-9X]/gi, '').toUpperCase() === isbnClean.toUpperCase()
               )
             );
-            openLibraryData = exactOpenLibraryDoc || jsonSearch.docs[0];
+            openLibraryData = exactOpenLibraryDoc || null;
           }
         }
       }
@@ -243,14 +243,7 @@ export async function lookupBookByIsbnOrTitle(query) {
       if (res.ok) {
         const json = await res.json();
         if (json.docs && json.docs.length > 0) {
-          const exactOpenLibraryDoc = isIsbn
-            ? json.docs.find((doc) =>
-                (doc.isbn || []).some((value) =>
-                  String(value).replace(/[^0-9X]/gi, '').toUpperCase() === isbnClean.toUpperCase()
-                )
-              )
-            : null;
-          openLibraryData = exactOpenLibraryDoc || json.docs[0];
+          openLibraryData = json.docs[0];
         }
       }
     }
