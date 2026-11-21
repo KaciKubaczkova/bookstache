@@ -145,7 +145,8 @@ export function saveBook(libraryId, formData) {
     author: formData.author || '',
     year: formData.year || '',
     genre: formData.genre || '',
-    language: formData.language || 'Čeština',
+    language: formData.language || '',
+    publisher: formData.publisher || '',
     status: formData.status || 'Dostupná',
     notes: formData.notes || '',
     scanned_at: new Date().toISOString()
