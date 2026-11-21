@@ -43,12 +43,12 @@ export default function BookFormModal({ isOpen, initialData, onClose, onSave, li
         author: initialData.author || '',
         year: initialData.year || '',
         genre: initialData.genre || '',
-        language: isEditExisting ? lang : '',
+        language: lang,
         status: initialData.status || 'Dostupná',
         notes: initialData.notes || ''
       });
 
-      if (isEditExisting && lang) {
+      if (lang) {
         if (isMainLang) {
           setSelectedLanguageOption(lang);
           setCustomLanguage('');
