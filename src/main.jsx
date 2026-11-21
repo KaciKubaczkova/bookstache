@@ -4,9 +4,35 @@ import App from './App.jsx';
 import { AuthProvider } from './context/AuthContext';
 import './index.css';
 
-function ViewportManager() {\n  useEffect(() => {\n    const viewport = window.visualViewport;\n    const updateViewport = () => {\n      const height = viewport?.height || window.innerHeight;\n      document.documentElement.style.setProperty('--app-viewport-height', `${height}px`);\n    };\n    updateViewport();\n    viewport?.addEventListener('resize', updateViewport);\n    viewport?.addEventListener('scroll', updateViewport);\n    window.addEventListener('resize', updateViewport);\n    window.addEventListener('orientationchange', updateViewport);\n    return () => {\n      viewport?.removeEventListener('resize', updateViewport);\n      viewport?.removeEventListener('scroll', updateViewport);\n      window.removeEventListener('resize', updateViewport);\n      window.removeEventListener('orientationchange', updateViewport);\n    };\n  }, []);\n  return null;\n}\n\nReactDOM.createRoot(document.getElementById('root')).render(
+function ViewportManager() {
+  useEffect(() => {
+    const viewport = window.visualViewport;
+    const updateViewport = () => {
+      const height = viewport?.height || window.innerHeight;
+      document.documentElement.style.setProperty('--app-viewport-height', `${height}px`);
+    };
+
+    updateViewport();
+    viewport?.addEventListener('resize', updateViewport);
+    viewport?.addEventListener('scroll', updateViewport);
+    window.addEventListener('resize', updateViewport);
+    window.addEventListener('orientationchange', updateViewport);
+
+    return () => {
+      viewport?.removeEventListener('resize', updateViewport);
+      viewport?.removeEventListener('scroll', updateViewport);
+      window.removeEventListener('resize', updateViewport);
+      window.removeEventListener('orientationchange', updateViewport);
+    };
+  }, []);
+
+  return null;
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <AuthProvider>\n      <ViewportManager />
+    <AuthProvider>
+      <ViewportManager />
       <App />
     </AuthProvider>
   </React.StrictMode>
