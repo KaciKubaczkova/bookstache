@@ -2,7 +2,7 @@
 
 function mapLanguageCode(lang) {
   if (!lang) return '';
-  const raw = String(lang).toLowerCase().trim().replace(/^\\/languages\\//, '');
+  const raw = String(lang).toLowerCase().trim().replace('/languages/', '');
   const code = raw.split(/[-_]/)[0];
   const languages = {
     eng: 'Angličtina', en: 'Angličtina',
