@@ -253,7 +253,9 @@ export async function lookupBookByIsbnOrTitle(query) {
       bookInfo.genre = normalizeGenres(item.categories || []);
     }
 
-    if (!bookInfo.publisher) bookInfo.publisher = item.publisher || '';\n\n    if (!bookInfo.language && matchingLanguage) {
+    if (!bookInfo.publisher) bookInfo.publisher = item.publisher || '';
+
+    if (!bookInfo.language && matchingLanguage) {
       bookInfo.language = matchingLanguage;
     }
 
@@ -287,7 +289,10 @@ export async function lookupBookByIsbnOrTitle(query) {
       const subjs = openLibraryData.subjects.slice(0, 3).map(s => typeof s === 'string' ? s : s.name);
       bookInfo.genre = normalizeGenres(subjs);
     }
-    if (!bookInfo.publisher && openLibraryData.publishers) {\n      bookInfo.publisher = openLibraryData.publishers.map((p) => p.name || p).join(', ');\n    }\n    if (!bookInfo.language && (openLibraryData.languages || openLibraryData.language)) {
+    if (!bookInfo.publisher && openLibraryData.publishers) {
+      bookInfo.publisher = openLibraryData.publishers.map((p) => p.name || p).join(', ');
+    }
+    if (!bookInfo.language && (openLibraryData.languages || openLibraryData.language)) {
       bookInfo.language = extractLanguageValue(openLibraryData.languages || openLibraryData.language);
     }
   }
