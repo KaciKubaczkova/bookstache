@@ -162,9 +162,17 @@ export default function BookDetailModal({
             <div className="flex items-center space-x-2 bg-[#efe6d5] p-2.5 rounded-xl border border-[#d7ccc8]">
               <Globe className="w-4 h-4 text-[#8b2626] shrink-0" />
               <span className="font-semibold text-xs text-[#5c3a21]">Jazyk:</span>
-              <span className="font-bold">{book.language || 'Čeština'}</span>
+              <span className="font-bold">{book.language || 'Neuveden'}</span>
             </div>
           </div>
+
+          {book.publisher && (
+            <div className="flex items-center space-x-2 bg-[#efe6d5] p-2.5 rounded-xl border border-[#d7ccc8]">
+              <Book className="w-4 h-4 text-[#8b2626] shrink-0" />
+              <span className="font-semibold text-xs text-[#5c3a21]">Nakladatelství:</span>
+              <span className="font-bold">{book.publisher}</span>
+            </div>
+          )}
 
           <div className="flex items-center space-x-2 bg-[#efe6d5] p-2.5 rounded-xl border border-[#d7ccc8]">
             <Tag className="w-4 h-4 text-[#8b2626] shrink-0" />
