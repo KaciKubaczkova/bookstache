@@ -121,17 +121,17 @@ function normalizeGenres(values) {
     .filter(Boolean).join(' | ').toLowerCase();
   const genres = [];
   const add = (label) => { if (!genres.includes(label)) genres.push(label); };
-  if (/romance|romantick|román pro ženy|love stor/.test(text)) add('Romantika');
-  if (/fantasy|fantastick/.test(text)) add('Fantasy');
-  if (/science fiction|\bsci[- ]?fi\b/.test(text)) add('Sci-fi');
+  // BIC subject codes and English catalogue labels are both common in publisher metadata.
+  if (/\bfrd\b|adult.{0,30}romance|romance|romantick|román pro ženy|love stor/.test(text)) add('Romantika');
+  if (/fantasy|fantastick|\bfm\b/.test(text)) add('Fantasy');
+  if (/science fiction|\bsci[- ]?fi\b|\bfld\b/.test(text)) add('Sci-fi');
   if (/thriller|suspense|napětí/.test(text)) add('Thriller');
   if (/mystery|detective|krimi|detektiv/.test(text)) add('Detektivka');
   if (/horror|horor/.test(text)) add('Horor');
   if (/historical|historick/.test(text)) add('Historický román');
-  if (/contemporary|současn/.test(text)) add('Současná literatura');
-  if (/young adult|\bya\b|teenage|adolescent/.test(text)) add('Young Adult');
+  if (/contemporary|modern.{0,20}romance|současn/.test(text)) add('Současný román');
+  if (/young adult|\bya\b|teenage|adolescent|\byf\b/.test(text)) add('Young Adult');
   if (/adult fiction|adult romance|new adult|\badult\b/.test(text)) add('Adult');
-  if (/children|juvenile|dětsk/.test(text)) add('Pro děti');
   if (/fiction|beletrie|literatura/.test(text) && !genres.length) add('Beletrie');
   return genres.slice(0, 4).join(', ');
 }
@@ -179,8 +179,11 @@ export async function lookupBookByIsbnOrTitle(query) {
       bookInfo.year = String(rec.publishDate[0]);
     }
     // For ISBN searches, never take language from a different edition.
+    // The Knihovny.cz request above uses type=ISN with this exact ISBN.
+    // Its VuFind result schema does not always expose ISBN in the fields we can inspect,
+    // so requiring a second ISBN-field match incorrectly discards the exact search result.
     const exactKnihovnyRecord = isIsbn
-      ? (knihovnyData.records || []).find((record) => recordHasExactIsbn(record, isbnClean))
+      ? ((knihovnyData.records || []).find((record) => recordHasExactIsbn(record, isbnClean)) || rec)
       : rec;
     if (exactKnihovnyRecord) {
       bookInfo.language = extractLanguageValue(exactKnihovnyRecord.languages || exactKnihovnyRecord.language);
@@ -286,7 +289,7 @@ export async function lookupBookByIsbnOrTitle(query) {
       }
     }
     if (!bookInfo.genre && openLibraryData.subjects) {
-      const subjs = openLibraryData.subjects.slice(0, 3).map(s => typeof s === 'string' ? s : s.name);
+      const subjs = openLibraryData.subjects.map(s => typeof s === 'string' ? s : s.name);
       bookInfo.genre = normalizeGenres(subjs);
     }
     if (!bookInfo.publisher && openLibraryData.publishers) {
