@@ -2,17 +2,71 @@
 
 function mapLanguageCode(lang) {
   if (!lang) return '';
-  const l = String(lang).toLowerCase().trim();
-  if (l.includes('eng') || l === 'en' || l.includes('english') || l.includes('angličtina')) return 'Angličtina';
-  if (l.includes('cze') || l.includes('ces') || l === 'cs' || l.includes('czech') || l.includes('čeština')) return 'Čeština';
-  if (l.includes('slo') || l.includes('slk') || l === 'sk' || l.includes('slovak') || l.includes('slovenština')) return 'Slovenština';
-  if (l.includes('ger') || l.includes('deu') || l === 'de' || l.includes('german') || l.includes('němčina')) return 'Němčina';
-  if (l.includes('fre') || l.includes('fra') || l === 'fr' || l.includes('french') || l.includes('francouzština')) return 'Francouzština';
-  if (l.includes('ita') || l === 'it' || l.includes('italian') || l.includes('italština')) return 'Italština';
-  if (l.includes('pol') || l === 'pl' || l.includes('polish') || l.includes('polština')) return 'Polština';
-  if (l.includes('rus') || l === 'ru' || l.includes('russian') || l.includes('ruština')) return 'Ruština';
-  if (l.includes('spa') || l === 'es' || l.includes('spanish') || l.includes('španělština')) return 'Španělština';
-  return l.toUpperCase();
+  const raw = String(lang).toLowerCase().trim().replace(/^\\/languages\\//, '');
+  const code = raw.split(/[-_]/)[0];
+  const languages = {
+    eng: 'Angličtina', en: 'Angličtina',
+    cze: 'Čeština', ces: 'Čeština', cs: 'Čeština',
+    slk: 'Slovenština', slo: 'Slovenština', sk: 'Slovenština',
+    ger: 'Němčina', deu: 'Němčina', de: 'Němčina',
+    fre: 'Francouzština', fra: 'Francouzština', fr: 'Francouzština',
+    ita: 'Italština', it: 'Italština',
+    pol: 'Polština', pl: 'Polština',
+    rus: 'Ruština', ru: 'Ruština',
+    spa: 'Španělština', es: 'Španělština',
+    dut: 'Nizozemština', nld: 'Nizozemština', nl: 'Nizozemština',
+    por: 'Portugalština', pt: 'Portugalština',
+    hun: 'Maďarština', hu: 'Maďarština',
+    rum: 'Rumunština', ron: 'Rumunština', ro: 'Rumunština',
+    ukr: 'Ukrajinština', uk: 'Ukrajinština',
+    jpn: 'Japonština', ja: 'Japonština',
+    chi: 'Čínština', zho: 'Čínština', zh: 'Čínština',
+    kor: 'Korejština', ko: 'Korejština',
+    ara: 'Arabština', ar: 'Arabština',
+    gre: 'Řečtina', ell: 'Řečtina', el: 'Řečtina',
+    heb: 'Hebrejština', he: 'Hebrejština',
+    hrv: 'Chorvatština', hr: 'Chorvatština',
+    srp: 'Srbština', sr: 'Srbština',
+    slv: 'Slovinština',
+    bul: 'Bulharština', bg: 'Bulharština',
+    swe: 'Švédština', sv: 'Švédština',
+    dan: 'Dánština', da: 'Dánština',
+    nor: 'Norština', no: 'Norština',
+    fin: 'Finština', fi: 'Finština',
+    tur: 'Turečtina', tr: 'Turečtina',
+    cat: 'Katalánština', ca: 'Katalánština',
+    tha: 'Thajština', th: 'Thajština',
+    vie: 'Vietnamština', vi: 'Vietnamština',
+    ind: 'Indonéština', id: 'Indonéština'
+  };
+
+  if (languages[raw]) return languages[raw];
+  if (languages[code]) return languages[code];
+
+  const aliases = [
+    [/english|angličtina/, 'Angličtina'],
+    [/czech|čeština/, 'Čeština'],
+    [/slovak|slovenština/, 'Slovenština'],
+    [/german|němčina/, 'Němčina'],
+    [/french|francouzština/, 'Francouzština'],
+    [/italian|italština/, 'Italština'],
+    [/polish|polština/, 'Polština'],
+    [/russian|ruština/, 'Ruština'],
+    [/spanish|španělština/, 'Španělština'],
+    [/dutch|nizozemština/, 'Nizozemština'],
+    [/portuguese|portugalština/, 'Portugalština'],
+    [/hungarian|maďarština/, 'Maďarština'],
+    [/romanian|rumunština/, 'Rumunština'],
+    [/ukrainian|ukrajinština/, 'Ukrajinština'],
+    [/japanese|japonština/, 'Japonština'],
+    [/chinese|čínština/, 'Čínština'],
+    [/korean|korejština/, 'Korejština'],
+    [/arabic|arabština/, 'Arabština'],
+    [/greek|řečtina/, 'Řečtina'],
+    [/hebrew|hebrejština/, 'Hebrejština']
+  ];
+  const match = aliases.find(([pattern]) => pattern.test(raw));
+  return match ? match[1] : '';
 }
 
 export async function lookupBookByIsbnOrTitle(query) {
