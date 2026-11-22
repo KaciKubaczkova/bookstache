@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Camera, Barcode, Search, AlertCircle, Loader2, Edit3, ArrowLeft, Type, Zap, RefreshCw, CheckCircle2 } from 'lucide-react';
 import { Html5Qrcode } from 'html5-qrcode';
-import { lookupBookByIsbnOrTitle } from '../services/bookLookup';
+import { lookupBookByIsbnOrTitle, searchBooksByTitle } from '../services/bookLookup';
 import { extractIsbnFromText } from '../services/isbnParser';
 import { cropVideoTarget } from '../services/imageProcessing';
 import Tesseract from 'tesseract.js';
@@ -12,6 +12,7 @@ export default function ScannerModal({ isOpen, onClose, onBookFound }) {
   const [viewMode, setViewMode] = useState('barcode');
   const [manualIsbn, setManualIsbn] = useState('');
   const [titleQuery, setTitleQuery] = useState('');
+  const [titleResults, setTitleResults] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [cameraError, setCameraError] = useState('');
@@ -84,6 +85,7 @@ export default function ScannerModal({ isOpen, onClose, onBookFound }) {
       setError('');
       setManualIsbn('');
       setTitleQuery('');
+      setTitleResults([]);
       setOcrDetectedText('');
       setOcrStatus('Namiřte obdélník na řádek s číslem ISBN');
       setOcrLoading(false);
@@ -290,6 +292,43 @@ export default function ScannerModal({ isOpen, onClose, onBookFound }) {
       onBookFound(bookData);
     } catch (err) {
       setError(err.message || 'Kniha nebyla nalezena. Můžete zadat údaje ručně.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleTitleSearch = async () => {
+    if (!titleQuery.trim()) return;
+    setLoading(true);
+    setError('');
+    setTitleResults([]);
+    try {
+      const results = await searchBooksByTitle(titleQuery);
+      setTitleResults(results);
+      if (!results.length) setError('Nenašli jsme odpovídající vydání. Zkuste upravit hledaný výraz nebo zadat ISBN.');
+    } catch (err) {
+      setError(err.message || 'Vyhledávání se nepodařilo.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const selectTitleResult = async (candidate) => {
+    setLoading(true);
+    try {
+      const details = candidate.isbn
+        ? await lookupBookByIsbnOrTitle(candidate.isbn)
+        : candidate;
+      onBookFound({
+        ...details,
+        title: details.title || candidate.title,
+        author: details.author || candidate.author,
+        year: details.year || candidate.year,
+        publisher: details.publisher || candidate.publisher,
+        isbn: details.isbn || candidate.isbn || ''
+      });
+    } catch (err) {
+      setError(err.message || 'Vybrané vydání se nepodařilo načíst.');
     } finally {
       setLoading(false);
     }
@@ -638,7 +677,7 @@ export default function ScannerModal({ isOpen, onClose, onBookFound }) {
             <form
               onSubmit={(e) => {
                 e.preventDefault();
-                handleLookup(titleQuery);
+                handleTitleSearch();
               }}
               className="space-y-4 py-1"
             >
@@ -658,6 +697,25 @@ export default function ScannerModal({ isOpen, onClose, onBookFound }) {
                   Pro knihy bez čárového kódu či bez ISBN zadejte název nebo autora.
                 </p>
               </div>
+
+              {titleResults.length > 0 && (
+                <div className="space-y-2 border-t border-[#d7ccc8] pt-3">
+                  <p className="text-xs font-bold text-[#5c3a21]">Vyberte správné vydání ({titleResults.length})</p>
+                  {titleResults.map((book, index) => (
+                    <button
+                      key={book.isbn || `${book.title}-${book.author}-${book.year}-${index}`}
+                      type="button"
+                      onClick={() => selectTitleResult(book)}
+                      disabled={loading}
+                      className="w-full p-3 text-left bg-[#efe6d5] hover:bg-[#e8ddc8] border border-[#a1887f] rounded-xl transition-colors disabled:opacity-50"
+                    >
+                      <span className="block text-sm font-bold text-[#3a2212]">{book.title}</span>
+                      <span className="block text-xs text-[#5c3a21] mt-1">{book.author || 'Autor neuveden'}{book.year ? ` · ${book.year}` : ''}</span>
+                      <span className="block text-[11px] text-[#7d5d42] mt-0.5">{[book.publisher, book.isbn ? `ISBN ${book.isbn}` : ''].filter(Boolean).join(' · ') || 'Další údaje vydání nejsou dostupné'}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
 
               <button
                 type="submit"
