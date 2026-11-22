@@ -375,7 +375,7 @@ function normalizeCandidateIsbn(identifiers = []) {
   return item?.identifier || '';
 }
 
-export function deduplicateBookCandidates(rawCandidates) {
+export function deduplicateBookCandidates(rawCandidates, query = '') {
   const normalizeText = (value) => String(value || '')
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
@@ -386,10 +386,19 @@ export function deduplicateBookCandidates(rawCandidates) {
     .replace(/\s+/g, ' ');
 
   const normalizeTitle = (value) => {
-    let title = String(value || '').trim();
-    title = title.split(/\s*[:：]\s*/)[0];
-    title = title.split(/\s+[–—]\s+/)[0];
-    title = title.split('(')[0].split('[')[0];
+    const title = String(value || '').trim();
+    const baseTitle = title
+      .split(/\s*[:：]\s*/)[0]
+      .split(/\s+[–—]\s+/)[0]
+      .split('(')[0]
+      .split('[')[0]
+      .trim();
+
+    // Remove subtitle/alternate-title variants only when the user's query is
+    // exactly the base title. A search for a full subtitle stays distinct.
+    if (normalizeText(query) && normalizeText(baseTitle) === normalizeText(query)) {
+      return normalizeText(baseTitle);
+    }
     return normalizeText(title);
   };
 
@@ -520,6 +529,6 @@ export async function searchBooksByTitle(query) {
     });
   });
 
-  return deduplicateBookCandidates(candidates);
+  return deduplicateBookCandidates(candidates, cleanQuery);
 }
 
