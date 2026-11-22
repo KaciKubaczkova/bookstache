@@ -121,66 +121,89 @@ input, select, textarea {
   }
 }
 
-/* All full-screen dialogs track the actually visible viewport. This is
-   important on mobile Safari/Chrome when the on-screen keyboard opens. */
-.fixed.inset-0.z-50 {
+/* Dialogs follow the visible viewport, including when the mobile keyboard opens.
+   Keep these styles scoped: the navigation drawer is also a fixed full-screen layer. */
+.app-dialog-overlay {
+  position: fixed;
+  top: var(--app-viewport-top, 0px);
+  right: 0;
+  bottom: auto;
+  left: 0;
   height: var(--app-viewport-height, 100dvh);
   min-height: 0;
   box-sizing: border-box;
-  align-items: flex-start;
-  justify-content: center;
-  padding-top: max(0.75rem, env(safe-area-inset-top, 0px));
-  padding-bottom: max(0.75rem, var(--app-safe-bottom));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0;
+  padding: max(0.75rem, env(safe-area-inset-top, 0px)) 0.65rem max(0.75rem, var(--app-safe-bottom));
   overflow-y: auto;
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
 }
 
-.fixed.inset-0.z-50 > div {
-  max-height: calc(var(--app-viewport-height, 100dvh) - 1.5rem);
+.app-dialog-panel {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  max-height: calc(var(--app-viewport-height, 100dvh) - max(0.75rem, env(safe-area-inset-top, 0px)) - max(0.75rem, var(--app-safe-bottom)));
+  min-height: 0;
+  margin-block: 0 !important;
+  overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
+  flex-shrink: 0;
+}
+
+.app-drawer-overlay {
+  top: var(--app-viewport-top, 0px);
+  bottom: auto;
+  height: var(--app-viewport-height, 100dvh);
+  min-height: 0;
+}
+
+.app-drawer-panel {
+  height: 100%;
+  max-height: 100%;
+  min-height: 0;
 }
 
 @media (min-width: 640px) {
-  .fixed.inset-0.z-50 {
-    align-items: center;
+  .app-dialog-overlay {
+    justify-content: center;
     padding: 1.5rem;
   }
 
-  .fixed.inset-0.z-50 > div {
+  .app-dialog-panel {
     max-height: calc(var(--app-viewport-height, 100dvh) - 3rem);
   }
 }
 
 @media (max-width: 639px) {
-  .fixed.inset-0.z-50 {
+  .app-dialog-overlay {
     padding-left: 0.65rem;
     padding-right: 0.65rem;
   }
 
-  .fixed.inset-0.z-50 > div {
-    width: 100%;
+  .app-dialog-panel {
     max-width: 100%;
-    padding: 1rem;
-    margin-top: 0;
-    margin-bottom: 0;
     border-radius: 1rem;
   }
 
-  .fixed.inset-0.z-50 input,
-  .fixed.inset-0.z-50 select,
-  .fixed.inset-0.z-50 textarea {
+  .app-dialog-panel input,
+  .app-dialog-panel select,
+  .app-dialog-panel textarea {
     min-height: 44px;
     font-size: 16px;
   }
 
-  .fixed.inset-0.z-50 button {
+  .app-dialog-panel button {
     touch-action: manipulation;
   }
 
-  .fixed.inset-0.z-50 table {
+  .app-dialog-panel table {
     min-width: 720px;
   }
 }

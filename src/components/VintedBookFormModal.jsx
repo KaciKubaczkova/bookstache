@@ -196,8 +196,8 @@ export default function VintedBookFormModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 overflow-y-auto">
-      <div className="bg-[#f7f3ed] border-2 border-[#8b2626]/20 rounded-3xl max-w-lg w-full p-6 shadow-2xl relative my-8 animate-in fade-in zoom-in-95 duration-200">
+    <div className="app-dialog-overlay fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 overflow-y-auto">
+      <div className="app-dialog-panel bg-[#f7f3ed] border-2 border-[#8b2626]/20 rounded-3xl max-w-lg w-full p-6 shadow-2xl relative my-8 animate-in fade-in zoom-in-95 duration-200">
         <button
           onClick={onClose}
           className="absolute top-4 right-4 text-[#5c3a21] hover:text-[#8b2626] p-1 rounded-full hover:bg-[#efe6d5] transition-colors cursor-pointer"

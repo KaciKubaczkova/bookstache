@@ -147,8 +147,8 @@ export default function TableModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/60 backdrop-blur-xs overflow-y-auto print:p-0 print:bg-white print:static">
-      <div className="relative w-full max-w-7xl bg-[#efe6d5] border-2 border-[#d7ccc8] rounded-2xl shadow-2xl flex flex-col max-h-[92vh] print:max-h-none print:shadow-none print:border-none print:w-full print:bg-white">
+    <div className="app-dialog-overlay fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/60 backdrop-blur-xs overflow-y-auto print:p-0 print:bg-white print:static">
+      <div className="app-dialog-panel relative w-full max-w-7xl bg-[#efe6d5] border-2 border-[#d7ccc8] rounded-2xl shadow-2xl flex flex-col max-h-[92vh] print:max-h-none print:shadow-none print:border-none print:w-full print:bg-white">
         {/* Modal Header */}
         <div className="p-4 bg-[#8b2626] text-white rounded-t-2xl flex items-center justify-between shrink-0 print:bg-white print:text-black print:border-b print:border-gray-300">
           <div className="flex items-center space-x-3">
