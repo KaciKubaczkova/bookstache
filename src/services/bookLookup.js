@@ -385,36 +385,71 @@ export async function searchBooksByTitle(query) {
     fetch(`https://www.knihovny.cz/api/v1/search?lookfor=${encodeURIComponent(cleanQuery)}&type=AllFields&limit=20`).then(r => r.ok ? r.json() : null)
   ]);
 
-  // One result represents one work (title + author), not each catalogue
-  // record or ISBN edition. Merge useful edition details into that result.
-  const candidates = new Map();
+  // Collapse catalogue variants into one work per title and author.
+  // Strip subtitles, alternate titles in parentheses, and birth/death dates.
   const normalizeWorkPart = (value) => String(value || '')
     .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[\\u0300-\\u036f]/g, '')
     .toLowerCase()
+    .replace(/\\b\\d{3,4}\\s*[-–—]\\s*\\d{3,4}\\b/g, '')
     .replace(/[^a-z0-9]+/g, ' ')
     .trim()
-    .replace(/\s+/g, ' ');
+    .replace(/\\s+/g, ' ');
+  const canonicalTitle = (value) => {
+    let title = String(value || '').trim();
+    // Some catalogue records prepend the author to the title.
+    const queryKey = normalizeWorkPart(cleanQuery);
+    const titleKey = normalizeWorkPart(title);
+    const queryAt = titleKey.indexOf(queryKey);
+    if (queryAt > 0 && titleKey.slice(0, queryAt).trim().split(' ').length <= 4) {
+      title = title.slice(titleKey.indexOf(queryKey) >= 0 ? title.toLowerCase().indexOf(cleanQuery.toLowerCase()) : 0);
+    }
+    title = title.split(':')[0].split('(')[0].trim();
+    return normalizeWorkPart(title);
+  };
+  const candidates = new Map();
   const add = (candidate) => {
     if (!candidate.title) return;
-    const titleKey = normalizeWorkPart(candidate.title);
-    const authorKey = normalizeWorkPart(candidate.author);
-    const key = titleKey + '|' + authorKey;
+    let author = String(candidate.author || '').replace(/,?\\s*\\(?\\d{3,4}\\s*[-–—]\\s*\\d{3,4}\\)?/g, '').trim();
+    let title = candidate.title;
+    const queryKey = normalizeWorkPart(cleanQuery);
+    const titleKey = normalizeWorkPart(title);
+    // Recognize records where the catalogue accidentally put the author in the title.
+    if (!author && titleKey.includes(queryKey)) {
+      const prefix = titleKey.slice(0, titleKey.indexOf(queryKey)).trim();
+      const possibleAuthor = Array.from(candidates.values()).find((item) => {
+        const authorKey = normalizeWorkPart(item.author);
+        return authorKey && prefix && (prefix.includes(authorKey) || authorKey.includes(prefix));
+      });
+      if (possibleAuthor) {
+        author = possibleAuthor.author;
+        const queryIndex = title.toLowerCase().indexOf(cleanQuery.toLowerCase());
+        if (queryIndex >= 0) title = title.slice(queryIndex);
+      }
+    }
+    const titleId = canonicalTitle(title);
+    const authorId = normalizeWorkPart(author);
+    const key = titleId + '|' + authorId;
     const existing = candidates.get(key);
     if (!existing) {
-      candidates.set(key, { ...candidate });
+      // If author is missing but this work already exists, attach it to that work.
+      const sameTitle = Array.from(candidates.entries()).find(([existingKey]) => existingKey.startsWith(titleId + '|'));
+      if (!authorId && sameTitle) {
+        const [existingKey, existingBook] = sameTitle;
+        candidates.set(existingKey, { ...existingBook,
+          publisher: existingBook.publisher || candidate.publisher || '',
+          isbn: existingBook.isbn || candidate.isbn || ''
+        });
+        return;
+      }
+      candidates.set(key, { ...candidate, title: title.trim(), author });
       return;
     }
-
-    // Keep one visible row, filling missing metadata from other catalogues.
-    // Prefer an ISBN-13 when available, but do not split editions into rows.
     const merged = { ...existing };
     for (const field of ['author', 'year', 'publisher', 'isbn']) {
       if (!merged[field] && candidate[field]) merged[field] = candidate[field];
     }
-    if (candidate.isbn && String(candidate.isbn).replace(/[^0-9X]/gi, '').length === 13) {
-      merged.isbn = candidate.isbn;
-    }
+    if (candidate.isbn && String(candidate.isbn).replace(/[^0-9X]/gi, '').length === 13) merged.isbn = candidate.isbn;
     candidates.set(key, merged);
   };
 
