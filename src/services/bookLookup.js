@@ -367,3 +367,59 @@ export async function lookupBookByIsbnOrTitle(query) {
 
   return bookInfo;
 }
+
+
+function normalizeCandidateIsbn(identifiers = []) {
+  const item = identifiers.find((entry) => entry?.type === 'ISBN_13') ||
+    identifiers.find((entry) => entry?.type === 'ISBN_10');
+  return item?.identifier || '';
+}
+
+export async function searchBooksByTitle(query) {
+  const cleanQuery = String(query || '').trim();
+  if (!cleanQuery) throw new Error('Zadejte název knihy nebo autora');
+
+  const requests = await Promise.allSettled([
+    fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(cleanQuery)}&maxResults=20`).then(r => r.ok ? r.json() : null),
+    fetch(`https://openlibrary.org/search.json?q=${encodeURIComponent(cleanQuery)}&limit=20`).then(r => r.ok ? r.json() : null),
+    fetch(`https://www.knihovny.cz/api/v1/search?lookfor=${encodeURIComponent(cleanQuery)}&type=AllFields&limit=20`).then(r => r.ok ? r.json() : null)
+  ]);
+
+  const candidates = [];
+  const add = (candidate) => {
+    if (!candidate.title) return;
+    const isbn = normalizeIsbn(candidate.isbn);
+    const key = isbn || `${candidate.title.toLowerCase()}|${candidate.author.toLowerCase()}|${candidate.year}`;
+    if (!candidates.some(item => item.key === key)) candidates.push({ ...candidate, key });
+  };
+
+  const google = requests[0].status === 'fulfilled' ? requests[0].value : null;
+  (google?.items || []).forEach(({ volumeInfo = {} }) => add({
+    title: volumeInfo.title || '',
+    author: (volumeInfo.authors || []).join(', '),
+    year: String(volumeInfo.publishedDate || '').slice(0, 4),
+    publisher: volumeInfo.publisher || '',
+    isbn: normalizeCandidateIsbn(volumeInfo.industryIdentifiers || [])
+  }));
+
+  const open = requests[1].status === 'fulfilled' ? requests[1].value : null;
+  (open?.docs || []).forEach(doc => add({
+    title: doc.title || '',
+    author: (doc.author_name || []).join(', '),
+    year: doc.first_publish_year ? String(doc.first_publish_year) : '',
+    publisher: (doc.publisher || [])[0] || '',
+    isbn: (doc.isbn || []).find(value => /^\\d{13}$/.test(value)) || (doc.isbn || [])[0] || ''
+  }));
+
+  const knihovny = requests[2].status === 'fulfilled' ? requests[2].value : null;
+  (knihovny?.records || []).forEach(record => add({
+    title: record.title || record.shortTitle || '',
+    author: Array.isArray(record.authors) ? record.authors.join(', ') :
+      Object.keys(record.authors?.primary || {}).join(', '),
+    year: Array.isArray(record.publishDate) ? String(record.publishDate[0] || '') : '',
+    publisher: record.publisher || record.publishers?.[0] || '',
+    isbn: record.isbn || record.isbn13 || ''
+  }));
+
+  return candidates.slice(0, 30).map(({ key, ...candidate }) => candidate);
+}
