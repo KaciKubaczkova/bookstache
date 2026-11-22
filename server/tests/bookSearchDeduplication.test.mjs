@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { deduplicateBookCandidates } from '../../src/services/bookLookup.js';
+import { findDuplicateBook } from '../../src/services/duplicateService.js';
 
 test('sloučí stejnou knihu při odlišném zápisu jména autora a podtitulu', () => {
   const results = deduplicateBookCandidates([
@@ -12,7 +13,7 @@ test('sloučí stejnou knihu při odlišném zápisu jména autora a podtitulu',
 
   assert.equal(results.length, 1);
   assert.equal(results[0].title, 'Obraz Doriana Graye');
-  assert.deepEqual(results[0].author, ['Oscar Wilde']);
+  assert.equal(results[0].author, 'Oscar Wilde');
 });
 
 test('ponechá stejnojmenné knihy od různých autorů odděleně', () => {
@@ -31,7 +32,7 @@ test('sloučí záznam bez autora pouze tehdy, když je známý jediný autor', 
   ], 'Obraz Doriana Graye');
 
   assert.equal(results.length, 1);
-  assert.deepEqual(results[0].author, ['Oscar Wilde']);
+  assert.equal(results[0].author, 'Oscar Wilde');
 });
 
 test('nepřiřadí záznam bez autora, pokud existuje více autorů stejného názvu', () => {
@@ -51,4 +52,17 @@ test('nesloučí různé plné názvy se společným začátkem', () => {
   ], 'Kniha: druhý díl');
 
   assert.equal(results.length, 2);
+});
+
+test('výsledek vyhledávání s autorem ve formě pole lze předat do kontroly duplicit', () => {
+  const results = deduplicateBookCandidates([
+    { title: 'Obraz Doriana Graye', author: ['Oscar Wilde'] },
+    { title: 'Obraz Doriana Graye', author: ['Wilde, Oscar (1854–1900)'] }
+  ], 'Obraz Doriana Graye');
+
+  assert.equal(typeof results[0].author, 'string');
+  assert.doesNotThrow(() => findDuplicateBook([], {
+    title: results[0].title,
+    author: ['Oscar Wilde']
+  }));
 });
