@@ -153,6 +153,17 @@ input, select, textarea {
   scroll-padding-block: 1rem 2rem;
 }
 
+@media (min-width: 640px) {
+  .mobile-dialog-overlay {
+    align-items: center;
+    padding: 1.5rem;
+  }
+
+  .mobile-dialog-panel {
+    max-height: calc(var(--app-viewport-height, 100dvh) - 3rem);
+  }
+}
+
 @media (max-width: 639px) {
   .mobile-dialog-overlay {
     padding-left: 0.65rem;
