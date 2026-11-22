@@ -1,18 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, BookPlus, Check, Save, Sparkles, Tag, Users, Globe, Calendar, User, Book } from 'lucide-react';
 
-const MAIN_LANGUAGES = [
-  'Angličtina',
-  'Čeština',
-  'Francouzština',
-  'Italština',
-  'Němčina',
-  'Polština',
-  'Ruština',
-  'Slovenština',
-  'Španělština'
-];
-
 export default function BookFormModal({ isOpen, initialData, onClose, onSave, libraryName }) {
   const [formData, setFormData] = useState({
     isbn: '',
@@ -26,17 +14,12 @@ export default function BookFormModal({ isOpen, initialData, onClose, onSave, li
     notes: ''
   });
 
-  const [selectedLanguageOption, setSelectedLanguageOption] = useState('');
-  const [customLanguage, setCustomLanguage] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
     if (initialData) {
-      // If editing an existing saved book, initialData will have an id or explicit language
-      const isEditExisting = Boolean(initialData.id);
       const lang = initialData.language || '';
-      const isMainLang = MAIN_LANGUAGES.includes(lang);
 
       setFormData({
         isbn: initialData.isbn || '',
@@ -50,18 +33,6 @@ export default function BookFormModal({ isOpen, initialData, onClose, onSave, li
         notes: initialData.notes || ''
       });
 
-      if (lang) {
-        if (isMainLang) {
-          setSelectedLanguageOption(lang);
-          setCustomLanguage('');
-        } else {
-          setSelectedLanguageOption('ADD_OTHER');
-          setCustomLanguage(lang);
-        }
-      } else {
-        setSelectedLanguageOption('');
-        setCustomLanguage('');
-      }
     } else {
       setFormData({
         isbn: '',
@@ -74,28 +45,8 @@ export default function BookFormModal({ isOpen, initialData, onClose, onSave, li
         status: 'Dostupná',
         notes: ''
       });
-      setSelectedLanguageOption('');
-      setCustomLanguage('');
     }
   }, [initialData, isOpen]);
-
-  const handleLanguageSelectChange = (e) => {
-    const val = e.target.value;
-    setError('');
-    setSelectedLanguageOption(val);
-    if (val === 'ADD_OTHER') {
-      setFormData((prev) => ({ ...prev, language: customLanguage }));
-    } else {
-      setFormData((prev) => ({ ...prev, language: val }));
-    }
-  };
-
-  const handleCustomLanguageChange = (e) => {
-    const val = e.target.value;
-    setError('');
-    setCustomLanguage(val);
-    setFormData((prev) => ({ ...prev, language: val }));
-  };
 
   if (!isOpen) return null;
 
@@ -201,36 +152,19 @@ export default function BookFormModal({ isOpen, initialData, onClose, onSave, li
               />
             </div>
 
-            {/* Jazyk */}
+            {/* Jazyk – automaticky zjištěný, bez ruční volby */}
             <div>
               <label className="block text-[#5c3a21] mb-1 font-bold flex items-center space-x-1">
                 <Globe className="w-3.5 h-3.5 text-[#8b2626]" />
                 <span>Jazyk</span>
               </label>
-              <select
-                value={selectedLanguageOption}
-                onChange={handleLanguageSelectChange}
-                className="w-full p-2.5 text-sm bg-[#efe6d5] border border-[#a1887f] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#8b2626]"
-              >
-                <option value="">Vybrat jazyk</option>
-                {MAIN_LANGUAGES.map((lang) => (
-                  <option key={lang} value={lang}>
-                    {lang}
-                  </option>
-                ))}
-                <option value="ADD_OTHER">+ přidat další</option>
-              </select>
-
-              {selectedLanguageOption === 'ADD_OTHER' && (
-                <input
-                  type="text"
-                  value={customLanguage}
-                  onChange={handleCustomLanguageChange}
-                  placeholder="Zadejte vlastní jazyk..."
-                  className="w-full mt-2 p-2.5 text-sm bg-[#efe6d5] border border-[#a1887f] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#8b2626]"
-                  autoFocus
-                />
-              )}
+              <input
+                type="text"
+                value={formData.language || 'Nepodařilo se automaticky zjistit'}
+                readOnly
+                aria-readonly="true"
+                className="w-full p-2.5 text-sm bg-[#efe6d5] border border-[#a1887f] rounded-xl text-[#5c3a21] cursor-not-allowed"
+              />
             </div>
           </div>
 
