@@ -70,8 +70,8 @@ export default function EditLibraryModal({ isOpen, onClose, currentLibrary, onLi
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-      <div className="bg-[#f7f3ed] border-2 border-[#8b2626]/30 rounded-2xl max-w-md w-full p-6 shadow-2xl relative">
+    <div className="app-dialog-overlay fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+      <div className="app-dialog-panel bg-[#f7f3ed] border-2 border-[#8b2626]/30 rounded-2xl max-w-md w-full p-6 shadow-2xl relative">
         <button
           onClick={onClose}
           className="absolute top-4 right-4 text-[#5c3a21] hover:text-[#8b2626] p-1 rounded-full cursor-pointer"
