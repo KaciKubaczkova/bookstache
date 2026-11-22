@@ -478,7 +478,18 @@ export function deduplicateBookCandidates(rawCandidates, query = '') {
     }
   }
 
-  return [...identified.values()].slice(0, 30);
+  const authorAsText = (value) => {
+    if (Array.isArray(value)) return value.map(authorAsText).filter(Boolean).join(', ');
+    if (value && typeof value === 'object') {
+      return authorAsText(value.name || value.displayName || value.author || value.value || '');
+    }
+    return String(value || '').trim();
+  };
+
+  return [...identified.values()].slice(0, 30).map((candidate) => ({
+    ...candidate,
+    author: authorAsText(candidate.author)
+  }));
 }
 
 export async function searchBooksByTitle(query) {
