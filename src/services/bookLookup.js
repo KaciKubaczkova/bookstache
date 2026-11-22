@@ -385,12 +385,37 @@ export async function searchBooksByTitle(query) {
     fetch(`https://www.knihovny.cz/api/v1/search?lookfor=${encodeURIComponent(cleanQuery)}&type=AllFields&limit=20`).then(r => r.ok ? r.json() : null)
   ]);
 
-  const candidates = [];
+  // One result represents one work (title + author), not each catalogue
+  // record or ISBN edition. Merge useful edition details into that result.
+  const candidates = new Map();
+  const normalizeWorkPart = (value) => String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim()
+    .replace(/\s+/g, ' ');
   const add = (candidate) => {
     if (!candidate.title) return;
-    const isbn = normalizeIsbn(candidate.isbn);
-    const key = isbn || `${candidate.title.toLowerCase()}|${candidate.author.toLowerCase()}|${candidate.year}`;
-    if (!candidates.some(item => item.key === key)) candidates.push({ ...candidate, key });
+    const titleKey = normalizeWorkPart(candidate.title);
+    const authorKey = normalizeWorkPart(candidate.author);
+    const key = titleKey + '|' + authorKey;
+    const existing = candidates.get(key);
+    if (!existing) {
+      candidates.set(key, { ...candidate });
+      return;
+    }
+
+    // Keep one visible row, filling missing metadata from other catalogues.
+    // Prefer an ISBN-13 when available, but do not split editions into rows.
+    const merged = { ...existing };
+    for (const field of ['author', 'year', 'publisher', 'isbn']) {
+      if (!merged[field] && candidate[field]) merged[field] = candidate[field];
+    }
+    if (candidate.isbn && String(candidate.isbn).replace(/[^0-9X]/gi, '').length === 13) {
+      merged.isbn = candidate.isbn;
+    }
+    candidates.set(key, merged);
   };
 
   const google = requests[0].status === 'fulfilled' ? requests[0].value : null;
@@ -421,5 +446,5 @@ export async function searchBooksByTitle(query) {
     isbn: record.isbn || record.isbn13 || ''
   }));
 
-  return candidates.slice(0, 30).map(({ key, ...candidate }) => candidate);
+  return Array.from(candidates.values()).slice(0, 30);
 }

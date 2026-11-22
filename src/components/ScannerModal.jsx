@@ -700,7 +700,7 @@ export default function ScannerModal({ isOpen, onClose, onBookFound }) {
 
               {titleResults.length > 0 && (
                 <div className="space-y-2 border-t border-[#d7ccc8] pt-3">
-                  <p className="text-xs font-bold text-[#5c3a21]">Vyberte správné vydání ({titleResults.length})</p>
+                  <p className="text-xs font-bold text-[#5c3a21]">Vyberte knihu ({titleResults.length})</p>
                   {titleResults.map((book, index) => (
                     <button
                       key={book.isbn || `${book.title}-${book.author}-${book.year}-${index}`}
@@ -710,8 +710,7 @@ export default function ScannerModal({ isOpen, onClose, onBookFound }) {
                       className="w-full p-3 text-left bg-[#efe6d5] hover:bg-[#e8ddc8] border border-[#a1887f] rounded-xl transition-colors disabled:opacity-50"
                     >
                       <span className="block text-sm font-bold text-[#3a2212]">{book.title}</span>
-                      <span className="block text-xs text-[#5c3a21] mt-1">{book.author || 'Autor neuveden'}{book.year ? ` · ${book.year}` : ''}</span>
-                      <span className="block text-[11px] text-[#7d5d42] mt-0.5">{[book.publisher, book.isbn ? `ISBN ${book.isbn}` : ''].filter(Boolean).join(' · ') || 'Další údaje vydání nejsou dostupné'}</span>
+                      <span className="block text-xs text-[#5c3a21] mt-1">{book.author || 'Autor neuveden'}</span>
                     </button>
                   ))}
                 </div>
