@@ -141,7 +141,7 @@ export function normalizeGenres(values) {
     }
     return [];
   };
-  const audienceOnly = /^(young adult|ya|new adult|adult|teen|teenage|adolescent)(\\s+(fiction|books?|literature))?$/i;
+  const audienceOnly = /^(young adult|ya|new adult|adult|teen|teenage|adolescent)(\s+(fiction|books?|literature))?$/i;
   const text = flattenLabels(values)
     .filter(Boolean)
     .filter((label) => !audienceOnly.test(label.trim()))
