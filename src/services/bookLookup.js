@@ -389,12 +389,12 @@ export async function searchBooksByTitle(query) {
   // Strip subtitles, alternate titles in parentheses, and birth/death dates.
   const normalizeWorkPart = (value) => String(value || '')
     .normalize('NFD')
-    .replace(/[\\u0300-\\u036f]/g, '')
+    .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase()
-    .replace(/\\b\\d{3,4}\\s*[-–—]\\s*\\d{3,4}\\b/g, '')
+    .replace(/\b\d{3,4}\s*[-–—]\s*\d{3,4}\b/g, '')
     .replace(/[^a-z0-9]+/g, ' ')
     .trim()
-    .replace(/\\s+/g, ' ');
+    .replace(/\s+/g, ' ');
   const canonicalTitle = (value) => {
     let title = String(value || '').trim();
     // Some catalogue records prepend the author to the title.
@@ -410,7 +410,7 @@ export async function searchBooksByTitle(query) {
   const candidates = new Map();
   const add = (candidate) => {
     if (!candidate.title) return;
-    let author = String(candidate.author || '').replace(/,?\\s*\\(?\\d{3,4}\\s*[-–—]\\s*\\d{3,4}\\)?/g, '').trim();
+    let author = String(candidate.author || '').replace(/,?\s*\(?\d{3,4}\s*[-–—]\s*\d{3,4}\)?/g, '').trim();
     let title = candidate.title;
     const queryKey = normalizeWorkPart(cleanQuery);
     const titleKey = normalizeWorkPart(title);
