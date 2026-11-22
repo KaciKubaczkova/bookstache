@@ -5,8 +5,8 @@ export default function NeighborDetailModal({ neighbor, books, isOpen, onClose, 
   if (!isOpen || !neighbor) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-in fade-in duration-200">
-      <div className="bg-[#f7f3ed] border-2 border-[#d7ccc8] rounded-3xl max-w-lg w-full max-h-[90vh] overflow-hidden shadow-2xl flex flex-col">
+    <div className="app-dialog-overlay fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-in fade-in duration-200">
+      <div className="app-dialog-panel bg-[#f7f3ed] border-2 border-[#d7ccc8] rounded-3xl max-w-lg w-full max-h-[90vh] overflow-hidden shadow-2xl flex flex-col">
         {/* Header */}
         <div className="bg-[#efe6d5] p-5 border-b border-[#d7ccc8] flex items-center justify-between">
           <div className="flex items-center space-x-3">
