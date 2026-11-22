@@ -9,7 +9,9 @@ function ViewportManager() {
     const viewport = window.visualViewport;
     const updateViewport = () => {
       const height = viewport?.height || window.innerHeight;
+      const offsetTop = viewport?.offsetTop || 0;
       document.documentElement.style.setProperty('--app-viewport-height', `${height}px`);
+      document.documentElement.style.setProperty('--app-viewport-offset-top', `${offsetTop}px`);
     };
 
     updateViewport();
