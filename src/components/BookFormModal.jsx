@@ -127,7 +127,7 @@ export default function BookFormModal({ isOpen, initialData, onClose, onSave, li
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="book-form-grid grid grid-cols-2 gap-3">
             {/* Rok vydání */}
             <div>
               <label className="block text-[#5c3a21] mb-1 font-bold flex items-center space-x-1">
@@ -144,7 +144,7 @@ export default function BookFormModal({ isOpen, initialData, onClose, onSave, li
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="book-form-grid grid grid-cols-2 gap-3">
             {/* Nakladatelství */}
           <div>
             <label className="block text-[#5c3a21] mb-1 font-bold">Nakladatelství</label>
