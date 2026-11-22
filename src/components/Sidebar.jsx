@@ -47,7 +47,7 @@ export default function Sidebar({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex">
+    <div className="app-drawer-overlay fixed inset-0 z-50 flex">
       {/* Backdrop */}
       <div
         className="fixed inset-0 bg-black/50 backdrop-blur-xs transition-opacity"
@@ -55,7 +55,7 @@ export default function Sidebar({
       ></div>
 
       {/* Drawer */}
-      <div className="relative w-80 max-w-[80vw] bg-[#efe6d5] h-full shadow-2xl border-r border-[#d7ccc8] flex flex-col z-10 animate-in slide-in-from-left duration-200">
+      <div className="app-drawer-panel relative w-80 max-w-[80vw] bg-[#efe6d5] h-full shadow-2xl border-r border-[#d7ccc8] flex flex-col z-10 animate-in slide-in-from-left duration-200">
         {/* Drawer Header */}
         <div className="p-4 bg-[#8b2626] text-white flex items-center justify-between">
           <div className="flex items-center space-x-2">
