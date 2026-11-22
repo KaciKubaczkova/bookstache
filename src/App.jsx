@@ -17,6 +17,7 @@ import { Scan, BookPlus, Filter, Library, Table as TableIcon } from 'lucide-reac
 
 import { exportLibraryCsv } from './services/storage';
 import { findDuplicateBook } from './services/duplicateService';
+import { compareLibraryBooks } from './services/librarySort';
 import {
   fetchLibraryExemplars,
   saveLibraryExemplar,
@@ -265,18 +266,7 @@ export default function App() {
 
       return true;
     })
-    .sort((a, b) => {
-      if (sortBy === 'title') {
-        return (a.title || '').localeCompare(b.title || '');
-      }
-      if (sortBy === 'author') {
-        return (a.author || '').localeCompare(b.author || '');
-      }
-      if (sortBy === 'year') {
-        return (parseInt(b.year) || 0) - (parseInt(a.year) || 0);
-      }
-      return (b.id || '').toString().localeCompare((a.id || '').toString());
-    });
+    .sort((a, b) => compareLibraryBooks(a, b, sortBy));
 
   const availableCount = books.filter((b) => b.status === 'Dostupná').length;
   const borrowedCount = books.filter((b) => b.status === 'Půjčená').length;
