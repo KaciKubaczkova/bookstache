@@ -375,19 +375,8 @@ function normalizeCandidateIsbn(identifiers = []) {
   return item?.identifier || '';
 }
 
-export async function searchBooksByTitle(query) {
-  const cleanQuery = String(query || '').trim();
-  if (!cleanQuery) throw new Error('Zadejte název knihy nebo autora');
-
-  const requests = await Promise.allSettled([
-    fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(cleanQuery)}&maxResults=20`).then(r => r.ok ? r.json() : null),
-    fetch(`https://openlibrary.org/search.json?q=${encodeURIComponent(cleanQuery)}&limit=20`).then(r => r.ok ? r.json() : null),
-    fetch(`https://www.knihovny.cz/api/v1/search?lookfor=${encodeURIComponent(cleanQuery)}&type=AllFields&limit=20`).then(r => r.ok ? r.json() : null)
-  ]);
-
-  // Collapse catalogue variants into one work per title and author.
-  // Strip subtitles, alternate titles in parentheses, and birth/death dates.
-  const normalizeWorkPart = (value) => String(value || '')
+export function deduplicateBookCandidates(rawCandidates) {
+  const normalizeText = (value) => String(value || '')
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase()
@@ -395,91 +384,142 @@ export async function searchBooksByTitle(query) {
     .replace(/[^a-z0-9]+/g, ' ')
     .trim()
     .replace(/\s+/g, ' ');
-  const canonicalTitle = (value) => {
+
+  const normalizeTitle = (value) => {
     let title = String(value || '').trim();
-    // Some catalogue records prepend the author to the title.
-    const queryKey = normalizeWorkPart(cleanQuery);
-    const titleKey = normalizeWorkPart(title);
-    const queryAt = titleKey.indexOf(queryKey);
-    if (queryAt > 0 && titleKey.slice(0, queryAt).trim().split(' ').length <= 4) {
-      title = title.slice(titleKey.indexOf(queryKey) >= 0 ? title.toLowerCase().indexOf(cleanQuery.toLowerCase()) : 0);
-    }
-    title = title.split(':')[0].split('(')[0].trim();
-    return normalizeWorkPart(title);
+    title = title.split(/\s*[:：]\s*/)[0];
+    title = title.split(/\s+[–—]\s+/)[0];
+    title = title.split('(')[0].split('[')[0];
+    return normalizeText(title);
   };
-  const candidates = new Map();
-  const add = (candidate) => {
-    if (!candidate.title) return;
-    let author = String(candidate.author || '').replace(/,?\s*\(?\d{3,4}\s*[-–—]\s*\d{3,4}\)?/g, '').trim();
-    let title = candidate.title;
-    const queryKey = normalizeWorkPart(cleanQuery);
-    const titleKey = normalizeWorkPart(title);
-    // Recognize records where the catalogue accidentally put the author in the title.
-    if (!author && titleKey.includes(queryKey)) {
-      const prefix = titleKey.slice(0, titleKey.indexOf(queryKey)).trim();
-      const possibleAuthor = Array.from(candidates.values()).find((item) => {
-        const authorKey = normalizeWorkPart(item.author);
-        return authorKey && prefix && (prefix.includes(authorKey) || authorKey.includes(prefix));
-      });
-      if (possibleAuthor) {
-        author = possibleAuthor.author;
-        const queryIndex = title.toLowerCase().indexOf(cleanQuery.toLowerCase());
-        if (queryIndex >= 0) title = title.slice(queryIndex);
-      }
+
+  const normalizePerson = (value) => {
+    let name = String(value || '')
+      .replace(/\([^)]*\d{3,4}[^)]*\)/g, ' ')
+      .replace(/\b\d{3,4}\s*[-–—]\s*\d{3,4}\b/g, ' ')
+      .replace(/\b(dr|phd|jr|sr)\b\.?/gi, ' ')
+      .trim();
+    if (!name) return '';
+
+    let firstName = '';
+    let lastName = '';
+    if (name.includes(',')) {
+      const [surnamePart, ...givenParts] = name.split(',');
+      const surnameTokens = normalizeText(surnamePart).split(' ').filter(Boolean);
+      const givenTokens = normalizeText(givenParts.join(' ')).split(' ').filter(Boolean);
+      firstName = givenTokens[0] || '';
+      lastName = surnameTokens[surnameTokens.length - 1] || '';
+    } else {
+      const tokens = normalizeText(name).split(' ').filter(Boolean);
+      firstName = tokens[0] || '';
+      lastName = tokens[tokens.length - 1] || '';
     }
-    const titleId = canonicalTitle(title);
-    const authorId = normalizeWorkPart(author);
-    const key = titleId + '|' + authorId;
-    const existing = candidates.get(key);
-    if (!existing) {
-      // If author is missing but this work already exists, attach it to that work.
-      const sameTitle = Array.from(candidates.entries()).find(([existingKey]) => existingKey.startsWith(titleId + '|'));
-      if (!authorId && sameTitle) {
-        const [existingKey, existingBook] = sameTitle;
-        candidates.set(existingKey, { ...existingBook,
-          publisher: existingBook.publisher || candidate.publisher || '',
-          isbn: existingBook.isbn || candidate.isbn || ''
-        });
-        return;
-      }
-      candidates.set(key, { ...candidate, title: title.trim(), author });
-      return;
-    }
+    if (!firstName && !lastName) return '';
+    return firstName + '|' + lastName;
+  };
+
+  const normalizeAuthors = (value) => {
+    const entries = Array.isArray(value)
+      ? value
+      : String(value || '').split(/\s*(?:;|&|\band\b)\s*/i);
+    return [...new Set(entries.map(normalizePerson).filter(Boolean))].sort().join('&');
+  };
+
+  const mergeCandidate = (existing, candidate) => {
     const merged = { ...existing };
     for (const field of ['author', 'year', 'publisher', 'isbn']) {
       if (!merged[field] && candidate[field]) merged[field] = candidate[field];
     }
-    if (candidate.isbn && String(candidate.isbn).replace(/[^0-9X]/gi, '').length === 13) merged.isbn = candidate.isbn;
-    candidates.set(key, merged);
+    const existingIsbnLength = String(merged.isbn || '').replace(/[^0-9X]/gi, '').length;
+    const candidateIsbnLength = String(candidate.isbn || '').replace(/[^0-9X]/gi, '').length;
+    if (candidateIsbnLength === 13 && existingIsbnLength !== 13) merged.isbn = candidate.isbn;
+    return merged;
   };
 
+  const identified = new Map();
+  const unidentified = new Map();
+
+  for (const candidate of rawCandidates) {
+    if (!candidate?.title) continue;
+    const titleKey = normalizeTitle(candidate.title);
+    if (!titleKey) continue;
+    const authorKey = normalizeAuthors(candidate.author);
+    const groupKey = titleKey + '|' + authorKey;
+
+    if (!authorKey) {
+      const existing = unidentified.get(titleKey);
+      unidentified.set(titleKey, existing ? mergeCandidate(existing, candidate) : { ...candidate });
+      continue;
+    }
+
+    const existing = identified.get(groupKey);
+    identified.set(groupKey, existing ? mergeCandidate(existing, candidate) : { ...candidate });
+  }
+
+  // Merge records with missing authors only when exactly one author is known
+  // for the title. Never guess between two different authors.
+  for (const [titleKey, candidate] of unidentified) {
+    const prefix = titleKey + '|';
+    const matchingWorks = [...identified.entries()].filter(([key]) => key.startsWith(prefix));
+    if (matchingWorks.length === 1) {
+      const [key, existing] = matchingWorks[0];
+      identified.set(key, mergeCandidate(existing, candidate));
+    } else {
+      identified.set(prefix, candidate);
+    }
+  }
+
+  return [...identified.values()].slice(0, 30);
+}
+
+export async function searchBooksByTitle(query) {
+  const cleanQuery = String(query || '').trim();
+  if (!cleanQuery) throw new Error('Zadejte název knihy nebo autora');
+
+  const requests = await Promise.allSettled([
+    fetch('https://www.googleapis.com/books/v1/volumes?q=' + encodeURIComponent(cleanQuery) + '&maxResults=20').then(r => r.ok ? r.json() : null),
+    fetch('https://openlibrary.org/search.json?q=' + encodeURIComponent(cleanQuery) + '&limit=20').then(r => r.ok ? r.json() : null),
+    fetch('https://www.knihovny.cz/api/v1/search?lookfor=' + encodeURIComponent(cleanQuery) + '&type=AllFields&limit=20').then(r => r.ok ? r.json() : null)
+  ]);
+
+  const candidates = [];
   const google = requests[0].status === 'fulfilled' ? requests[0].value : null;
-  (google?.items || []).forEach(({ volumeInfo = {} }) => add({
+  (google?.items || []).forEach(({ volumeInfo = {} }) => candidates.push({
     title: volumeInfo.title || '',
-    author: (volumeInfo.authors || []).join(', '),
+    author: volumeInfo.authors || [],
     year: String(volumeInfo.publishedDate || '').slice(0, 4),
     publisher: volumeInfo.publisher || '',
     isbn: normalizeCandidateIsbn(volumeInfo.industryIdentifiers || [])
   }));
 
   const open = requests[1].status === 'fulfilled' ? requests[1].value : null;
-  (open?.docs || []).forEach(doc => add({
+  (open?.docs || []).forEach(doc => candidates.push({
     title: doc.title || '',
-    author: (doc.author_name || []).join(', '),
+    author: doc.author_name || [],
     year: doc.first_publish_year ? String(doc.first_publish_year) : '',
     publisher: (doc.publisher || [])[0] || '',
-    isbn: (doc.isbn || []).find(value => /^\\d{13}$/.test(value)) || (doc.isbn || [])[0] || ''
+    isbn: (doc.isbn || []).find(value => /^\d{13}$/.test(value)) || (doc.isbn || [])[0] || ''
   }));
 
   const knihovny = requests[2].status === 'fulfilled' ? requests[2].value : null;
-  (knihovny?.records || []).forEach(record => add({
-    title: record.title || record.shortTitle || '',
-    author: Array.isArray(record.authors) ? record.authors.join(', ') :
-      Object.keys(record.authors?.primary || {}).join(', '),
-    year: Array.isArray(record.publishDate) ? String(record.publishDate[0] || '') : '',
-    publisher: record.publisher || record.publishers?.[0] || '',
-    isbn: record.isbn || record.isbn13 || ''
-  }));
+  (knihovny?.records || []).forEach(record => {
+    const primaryAuthors = record.authors?.primary;
+    const authors = Array.isArray(record.authors)
+      ? record.authors
+      : Array.isArray(primaryAuthors)
+        ? primaryAuthors.map(author => author?.name || author?.displayName || author)
+        : primaryAuthors && typeof primaryAuthors === 'object'
+          ? Object.keys(primaryAuthors)
+          : [];
+    candidates.push({
+      title: record.title || record.shortTitle || '',
+      author: authors,
+      year: Array.isArray(record.publishDate) ? String(record.publishDate[0] || '') : '',
+      publisher: record.publisher || record.publishers?.[0] || '',
+      isbn: record.isbn || record.isbn13 || ''
+    });
+  });
 
-  return Array.from(candidates.values()).slice(0, 30);
+  return deduplicateBookCandidates(candidates);
 }
+
