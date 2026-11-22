@@ -160,7 +160,6 @@ export function normalizeGenres(values) {
   if (/contemporary|modern.{0,20}romance|současn/.test(text)) add('Současný román');
   // Young Adult / New Adult / Adult describe the intended readership,
   // not the book's genre, so they are intentionally not added here.
-  if (/fiction|beletrie|literatura/.test(text) && !genres.length) add('Beletrie');
   return genres.slice(0, 4).join(', ');
 }
 
