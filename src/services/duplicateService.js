@@ -5,9 +5,17 @@
 export function findDuplicateBook(existingBooks, newBook, currentEditingId = null) {
   if (!existingBooks || !Array.isArray(existingBooks) || !newBook) return null;
 
-  const newIsbn = (newBook.isbn || '').replace(/[\s-]/g, '').toLowerCase();
-  const newTitle = (newBook.title || '').trim().toLowerCase();
-  const newAuthor = (newBook.author || '').trim().toLowerCase();
+  const asText = (value) => {
+    if (Array.isArray(value)) return value.map(asText).filter(Boolean).join(', ');
+    if (value && typeof value === 'object') {
+      return asText(value.name || value.displayName || value.author || value.value || '');
+    }
+    return String(value || '');
+  };
+
+  const newIsbn = asText(newBook.isbn).replace(/[\s-]/g, '').toLowerCase();
+  const newTitle = asText(newBook.title).trim().toLowerCase();
+  const newAuthor = asText(newBook.author).trim().toLowerCase();
 
   for (const book of existingBooks) {
     if (currentEditingId && book.id === currentEditingId) {
@@ -15,8 +23,8 @@ export function findDuplicateBook(existingBooks, newBook, currentEditingId = nul
     }
 
     const bookIsbn = (book.isbn || '').replace(/[\s-]/g, '').toLowerCase();
-    const bookTitle = (book.title || '').trim().toLowerCase();
-    const bookAuthor = (book.author || '').trim().toLowerCase();
+    const bookTitle = asText(book.title).trim().toLowerCase();
+    const bookAuthor = asText(book.author).trim().toLowerCase();
 
     // Check ISBN match first if ISBN is provided
     if (newIsbn && bookIsbn && newIsbn === bookIsbn) {
