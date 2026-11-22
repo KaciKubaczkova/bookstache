@@ -22,7 +22,7 @@ export function findDuplicateBook(existingBooks, newBook, currentEditingId = nul
       continue;
     }
 
-    const bookIsbn = (book.isbn || '').replace(/[\s-]/g, '').toLowerCase();
+    const bookIsbn = asText(book.isbn).replace(/[\s-]/g, '').toLowerCase();
     const bookTitle = asText(book.title).trim().toLowerCase();
     const bookAuthor = asText(book.author).trim().toLowerCase();
 
