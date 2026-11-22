@@ -32,7 +32,7 @@ test('sloučí záznam bez autora pouze tehdy, když je známý jediný autor', 
   ], 'Obraz Doriana Graye');
 
   assert.equal(results.length, 1);
-  assert.deepEqual(results[0].author, ['Oscar Wilde']);
+  assert.equal(results[0].author, 'Oscar Wilde');
 });
 
 test('nepřiřadí záznam bez autora, pokud existuje více autorů stejného názvu', () => {
