@@ -70,7 +70,7 @@ function mapLanguageCode(lang) {
 }
 
 
-function extractLanguageValue(value) {
+export function extractLanguageValue(value) {
   if (!value) return '';
   if (Array.isArray(value)) {
     for (const entry of value) {
@@ -99,6 +99,17 @@ function getGoogleBookLanguage(items, isbn) {
 }
 
 
+export function firstNonEmpty(values) {
+  if (!Array.isArray(values)) return values ?? null;
+  return values.find((value) => {
+    if (value == null) return false;
+    if (typeof value === 'string') return value.trim().length > 0;
+    if (Array.isArray(value)) return value.length > 0;
+    if (typeof value === 'object') return Object.keys(value).length > 0;
+    return true;
+  }) ?? null;
+}
+
 function normalizeIsbn(value) {
   return String(value || '').replace(/[^0-9X]/gi, '').toUpperCase();
 }
@@ -117,7 +128,7 @@ function recordHasExactIsbn(record, isbn) {
   return flatten(candidates).some((value) => normalizeIsbn(value) === target);
 }
 
-function normalizeGenres(values) {
+export function normalizeGenres(values) {
   // VuFind/Knihovny.cz returns subjects as nested arrays; Google Books and
   // Open Library use flat arrays. Normalize both shapes before matching.
   const flattenLabels = (value) => {
@@ -130,7 +141,12 @@ function normalizeGenres(values) {
     }
     return [];
   };
-  const text = flattenLabels(values).filter(Boolean).join(' | ').toLowerCase();
+  const audienceOnly = /^(young adult|ya|new adult|adult|teen|teenage|adolescent)(\s+(fiction|books?|literature))?$/i;
+  const text = flattenLabels(values)
+    .filter(Boolean)
+    .filter((label) => !audienceOnly.test(label.trim()))
+    .join(' | ')
+    .toLowerCase();
   const genres = [];
   const add = (label) => { if (!genres.includes(label)) genres.push(label); };
   // BIC subject codes and English catalogue labels are both common in publisher metadata.
@@ -203,14 +219,16 @@ export async function lookupBookByIsbnOrTitle(query) {
       ? ((knihovnyData.records || []).find((record) => recordHasExactIsbn(record, isbnClean)) || rec)
       : rec;
     if (exactKnihovnyRecord) {
-      bookInfo.language = extractLanguageValue(exactKnihovnyRecord.languages || exactKnihovnyRecord.language);
+      bookInfo.language = extractLanguageValue(firstNonEmpty([exactKnihovnyRecord.languages, exactKnihovnyRecord.language]));
     }
     const metadataRecord = exactKnihovnyRecord || (!isIsbn ? rec : null);
     bookInfo.publisher = metadataRecord?.publisher || metadataRecord?.publishers?.[0] || metadataRecord?.publisherName || '';
     const record = metadataRecord || rec;
     bookInfo.genre = normalizeGenres(
-      record.genres || record.genre || record.subjects || record.subjectsExtended ||
-      record.genre_facet || record.categories || []
+      firstNonEmpty([
+        record.genres, record.genre, record.subjects, record.subjectsExtended,
+        record.genre_facet, record.categories
+      ]) || []
     );
   }
 
@@ -339,7 +357,7 @@ export async function lookupBookByIsbnOrTitle(query) {
       bookInfo.publisher = openLibraryData.publishers.map((p) => p.name || p).join(', ');
     }
     if (!bookInfo.language && (openLibraryData.languages || openLibraryData.language)) {
-      bookInfo.language = extractLanguageValue(openLibraryData.languages || openLibraryData.language);
+      bookInfo.language = extractLanguageValue(firstNonEmpty([openLibraryData.languages, openLibraryData.language]));
     }
   }
 
