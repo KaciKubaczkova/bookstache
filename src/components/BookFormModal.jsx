@@ -142,7 +142,7 @@ export default function BookFormModal({ isOpen, initialData, onClose, onSave, li
                 className="w-full p-2.5 text-sm bg-[#efe6d5] border border-[#a1887f] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#8b2626]"
               />
             </div>
-
+          </div>
 
           <div className="grid grid-cols-2 gap-3">
             {/* Nakladatelství */}
