@@ -147,7 +147,7 @@ input, select, textarea {
   box-sizing: border-box;
   width: 100%;
   min-width: 0;
-  max-height: calc(var(--app-viewport-height, 100dvh) - 1.5rem);
+  max-height: calc(var(--app-viewport-height, 100dvh) - max(0.75rem, env(safe-area-inset-top, 0px)) - max(0.75rem, var(--app-safe-bottom)));
   min-height: 0;
   margin-block: 0 !important;
   overflow-x: hidden;
