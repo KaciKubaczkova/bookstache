@@ -18,7 +18,30 @@ import * as localStorageService from './storage';
 // Collection references
 const BOOKS_COL = 'books';
 const LIBRARIES_COL = 'libraries';
+
 const EXEMPLARS_COL = 'exemplars';
+
+// Load each distinct book title once and in parallel instead of awaiting one
+// Firestore document read after another for every exemplar.
+async function fetchBookTitleMap(exemplarDocs) {
+  const bookIds = [...new Set(
+    exemplarDocs
+      .map((exemplarDoc) => exemplarDoc.data().bookId)
+      .filter(Boolean)
+  )];
+
+  const entries = await Promise.all(bookIds.map(async (bookId) => {
+    try {
+      const bookSnapshot = await getDoc(doc(db, BOOKS_COL, bookId));
+      return [bookId, bookSnapshot.exists() ? bookSnapshot.data() : {}];
+    } catch (err) {
+      console.warn('Nepodařilo se načíst metadata knihy:', bookId, err);
+      return [bookId, {}];
+    }
+  }));
+
+  return new Map(entries);
+}
 
 /**
  * Ensures or creates a book title document in 'books' collection
@@ -216,21 +239,15 @@ export async function fetchLibraryExemplars(libraryId) {
       where('ownerType', '==', 'library')
     );
     const snap = await getDocs(q);
+    const bookTitlesById = await fetchBookTitleMap(snap.docs);
 
-    // Join with book title details
-    const exemplars = [];
-    for (const docSnap of snap.docs) {
+    return snap.docs.map((docSnap) => {
       const exData = docSnap.data();
-      let bookTitle = {};
-      if (exData.bookId) {
-        const bSnap = await getDoc(doc(db, BOOKS_COL, exData.bookId));
-        if (bSnap.exists()) bookTitle = bSnap.data();
-      }
+      const bookTitle = bookTitlesById.get(exData.bookId) || {};
 
-      exemplars.push({
+      return {
         id: docSnap.id,
         ...exData,
-        // Flat book metadata for UI components
         title: bookTitle.title || exData.title || 'Neznámý název',
         author: bookTitle.author || exData.author || '',
         isbn: bookTitle.isbn || exData.isbn || '',
@@ -238,10 +255,8 @@ export async function fetchLibraryExemplars(libraryId) {
         year: bookTitle.year || exData.year || '',
         language: bookTitle.language || exData.language || '',
         coverUrl: exData.coverUrl || bookTitle.coverUrl || ''
-      });
-    }
-
-    return exemplars;
+      };
+    });
   } catch (err) {
     console.error('Chyba při načítání exemplářů knihovny z Firestore:', err);
     return localStorageService.getBooks(libraryId);
@@ -296,7 +311,6 @@ export async function saveLibraryExemplar(libraryId, formData) {
  */
 export async function fetchVintedExemplars(filters = {}) {
   if (!isFirebaseConfigured) {
-    // Fallback demo vinted list from localStorage
     const localBooks = localStorageService.getBooks('vinted_demo');
     return localBooks.map((b) => ({
       ...b,
@@ -316,19 +330,13 @@ export async function fetchVintedExemplars(filters = {}) {
       where('isForLend', '==', true)
     );
     const snap = await getDocs(q);
+    const bookTitlesById = await fetchBookTitleMap(snap.docs);
 
-    const results = [];
-    for (const docSnap of snap.docs) {
+    const results = snap.docs.map((docSnap) => {
       const exData = docSnap.data();
-      let bookTitle = {};
-      if (exData.bookId) {
-        try {
-          const bSnap = await getDoc(doc(db, BOOKS_COL, exData.bookId));
-          if (bSnap.exists()) bookTitle = bSnap.data();
-        } catch (e) {}
-      }
+      const bookTitle = bookTitlesById.get(exData.bookId) || {};
 
-      const item = {
+      return {
         id: docSnap.id,
         ...exData,
         title: bookTitle.title || exData.title || 'Neznámý název',
@@ -339,16 +347,13 @@ export async function fetchVintedExemplars(filters = {}) {
         language: bookTitle.language || exData.language || '',
         coverUrl: exData.coverUrl || bookTitle.coverUrl || ''
       };
+    });
 
-      // Client-side filtering if needed
-      if (filters.location && filters.location !== 'all') {
-        const locFilter = filters.location.toLowerCase();
-        if (!(item.ownerLocation || '').toLowerCase().includes(locFilter)) {
-          continue;
-        }
-      }
-
-      results.push(item);
+    if (filters.location && filters.location !== 'all') {
+      const locFilter = filters.location.toLowerCase();
+      return results.filter((item) =>
+        (item.ownerLocation || '').toLowerCase().includes(locFilter)
+      );
     }
 
     return results;
