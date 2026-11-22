@@ -5,8 +5,8 @@ export default function DuplicateWarningModal({ isOpen, existingBook, onConfirm,
   if (!isOpen || !existingBook) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/75 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-      <div className="bg-[#f7f3ed] border-2 border-amber-600/50 rounded-2xl max-w-md w-full p-6 shadow-2xl relative animate-in fade-in zoom-in-95 duration-150">
+    <div className="app-dialog-overlay fixed inset-0 bg-black/75 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+      <div className="app-dialog-panel bg-[#f7f3ed] border-2 border-amber-600/50 rounded-2xl max-w-md w-full p-6 shadow-2xl relative animate-in fade-in zoom-in-95 duration-150">
         <div className="flex items-start justify-between pb-3 border-b border-[#d7ccc8] mb-4">
           <div className="flex items-center space-x-2">
             <div className="p-2.5 bg-amber-600 text-white rounded-xl">
