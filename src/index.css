@@ -147,7 +147,6 @@ input, select, textarea {
   box-sizing: border-box;
   width: 100%;
   min-width: 0;
-  max-width: 100%;
   max-height: calc(var(--app-viewport-height, 100dvh) - 1.5rem);
   min-height: 0;
   margin-block: 0 !important;
@@ -189,6 +188,7 @@ input, select, textarea {
   }
 
   .app-dialog-panel {
+    max-width: 100%;
     border-radius: 1rem;
   }
 
