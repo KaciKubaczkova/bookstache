@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, BookPlus, Check, Save, Sparkles, Tag, Users, Globe, Calendar, User, Book } from 'lucide-react';
+import { X, BookPlus, Save, Calendar, User, Book } from 'lucide-react';
 
 export default function BookFormModal({ isOpen, initialData, onClose, onSave, libraryName }) {
   const [formData, setFormData] = useState({
@@ -7,8 +7,6 @@ export default function BookFormModal({ isOpen, initialData, onClose, onSave, li
     title: '',
     author: '',
     year: '',
-    genre: '',
-    language: '',
     publisher: '',
     status: 'Dostupná',
     notes: ''
@@ -19,15 +17,11 @@ export default function BookFormModal({ isOpen, initialData, onClose, onSave, li
 
   useEffect(() => {
     if (initialData) {
-      const lang = initialData.language || '';
-
       setFormData({
         isbn: initialData.isbn || '',
         title: initialData.title || '',
         author: initialData.author || '',
         year: initialData.year || '',
-        genre: initialData.genre || '',
-        language: lang,
         publisher: initialData.publisher || '',
         status: initialData.status || 'Dostupná',
         notes: initialData.notes || ''
@@ -39,8 +33,6 @@ export default function BookFormModal({ isOpen, initialData, onClose, onSave, li
         title: '',
         author: '',
         year: '',
-        genre: '',
-        language: '',
         publisher: '',
         status: 'Dostupná',
         notes: ''
@@ -63,7 +55,6 @@ export default function BookFormModal({ isOpen, initialData, onClose, onSave, li
       await onSave({
         ...formData,
         title: formData.title.trim(),
-        language: formData.language.trim(),
         publisher: formData.publisher.trim()
       });
     } catch (err) {
@@ -152,36 +143,6 @@ export default function BookFormModal({ isOpen, initialData, onClose, onSave, li
               />
             </div>
 
-            {/* Jazyk – automaticky zjištěný, bez ruční volby */}
-            <div>
-              <label className="block text-[#5c3a21] mb-1 font-bold flex items-center space-x-1">
-                <Globe className="w-3.5 h-3.5 text-[#8b2626]" />
-                <span>Jazyk</span>
-              </label>
-              <input
-                type="text"
-                value={formData.language || 'Nepodařilo se automaticky zjistit'}
-                readOnly
-                aria-readonly="true"
-                className="w-full p-2.5 text-sm bg-[#efe6d5] border border-[#a1887f] rounded-xl text-[#5c3a21] cursor-not-allowed"
-              />
-            </div>
-          </div>
-
-          {/* Žánr */}
-          <div>
-            <label className="block text-[#5c3a21] mb-1 font-bold flex items-center space-x-1">
-              <Tag className="w-3.5 h-3.5 text-[#8b2626]" />
-              <span>Žánr</span>
-            </label>
-            <input
-              type="text"
-              value={formData.genre}
-              onChange={(e) => setFormData({ ...formData, genre: e.target.value })}
-              placeholder="Román, Pohádky, Sci-fi..."
-              className="w-full p-2.5 text-sm bg-[#efe6d5] border border-[#a1887f] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#8b2626]"
-            />
-          </div>
 
           <div className="grid grid-cols-2 gap-3">
             {/* Nakladatelství */}
