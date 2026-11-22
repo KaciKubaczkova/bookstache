@@ -19,6 +19,7 @@ import { exportLibraryCsv } from './services/storage';
 import { findDuplicateBook } from './services/duplicateService';
 import { compareLibraryBooks } from './services/librarySort';
 import { getAvailableAuthors, matchesAuthorFilter } from './services/libraryFilters';
+import { getRoleSwitchTransition } from './services/roleNavigation';
 import {
   fetchLibraryExemplars,
   saveLibraryExemplar,
@@ -551,9 +552,26 @@ export default function App() {
         role={role}
         onChangeLibraryClick={() => setShowLibraryModal(true)}
         onChangeRoleClick={() => {
-          setRole(null);
-          setCurrentLibrary(null);
-          setMainMode(null);
+          const transition = getRoleSwitchTransition(role);
+
+          setMainMode('library');
+          setActiveTab('library');
+          setActiveFilter('all');
+          setSelectedGenreFilter('all');
+          setSelectedAuthorFilter('all');
+          setSearchQuery('');
+
+          if (transition.preserveCurrentLibrary) {
+            // Librarian -> reader: open the reader view of this same library
+            // immediately, without returning to the home/mode selection screen.
+            setRole(transition.nextRole);
+            setShowLibraryModal(false);
+          } else {
+            // Reader -> librarian: require the usual role and library password flow.
+            setRole(null);
+            setCurrentLibrary(null);
+            setShowLibraryModal(false);
+          }
         }}
         totalCount={books.length}
         availableCount={availableCount}
