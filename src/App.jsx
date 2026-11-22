@@ -18,6 +18,7 @@ import { Scan, BookPlus, Filter, Library, Table as TableIcon } from 'lucide-reac
 import { exportLibraryCsv } from './services/storage';
 import { findDuplicateBook } from './services/duplicateService';
 import { compareLibraryBooks } from './services/librarySort';
+import { getAvailableAuthors, matchesAuthorFilter } from './services/libraryFilters';
 import {
   fetchLibraryExemplars,
   saveLibraryExemplar,
@@ -51,6 +52,7 @@ export default function App() {
   const [books, setBooks] = useState([]);
   const [activeFilter, setActiveFilter] = useState('all'); // 'all' | 'Dostupná' | 'Půjčená'
   const [selectedGenreFilter, setSelectedGenreFilter] = useState('all');
+  const [selectedAuthorFilter, setSelectedAuthorFilter] = useState('all');
   const [sortBy, setSortBy] = useState('newest'); // 'newest' | 'title' | 'author' | 'year'
   const [searchQuery, setSearchQuery] = useState('');
   const [loadingBooks, setLoadingBooks] = useState(false);
@@ -102,6 +104,8 @@ export default function App() {
 
   const handleSelectLibrary = (library) => {
     setCurrentLibrary(library);
+    setSelectedAuthorFilter('all');
+    setSelectedGenreFilter('all');
     setShowLibraryModal(false);
   };
 
@@ -244,6 +248,7 @@ export default function App() {
   const availableGenres = Array.from(
     new Set(books.map((b) => b.genre).filter(Boolean))
   ).sort();
+  const availableAuthors = getAvailableAuthors(books);
 
   // Filtered and sorted books list calculation
   const filteredBooks = books
@@ -252,6 +257,10 @@ export default function App() {
       if (activeFilter === 'Půjčená' && b.status !== 'Půjčená') return false;
 
       if (selectedGenreFilter !== 'all' && b.genre !== selectedGenreFilter) {
+        return false;
+      }
+
+      if (!matchesAuthorFilter(b.author, selectedAuthorFilter)) {
         return false;
       }
 
@@ -428,6 +437,20 @@ export default function App() {
                     <option value="all">Všechny žánry</option>
                     {availableGenres.map((g) => (
                       <option key={g} value={g}>{g}</option>
+                    ))}
+                  </select>
+                )}
+
+                {availableAuthors.length > 0 && (
+                  <select
+                    value={selectedAuthorFilter}
+                    onChange={(e) => setSelectedAuthorFilter(e.target.value)}
+                    aria-label="Filtrovat knihy podle autora"
+                    className="bg-[#f7f3ed] border border-[#a1887f] text-[#3a2212] text-xs font-semibold px-2.5 py-1.5 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#8b2626]"
+                  >
+                    <option value="all">Všichni autoři</option>
+                    {availableAuthors.map((author) => (
+                      <option key={author} value={author}>{author}</option>
                     ))}
                   </select>
                 )}
