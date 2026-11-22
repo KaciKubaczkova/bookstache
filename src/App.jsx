@@ -1,20 +1,20 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import ModeSelectModal from './components/ModeSelectModal';
 import RoleSelect from './components/RoleSelect';
 import LibrarySelectModal from './components/LibrarySelectModal';
 import Navbar from './components/Navbar';
 import Sidebar from './components/Sidebar';
-import ScannerModal from './components/ScannerModal';
+const ScannerModal = lazy(() => import('./components/ScannerModal'));
 import BookFormModal from './components/BookFormModal';
 import BookCard from './components/BookCard';
 import BookDetailModal from './components/BookDetailModal';
 import TableModal from './components/TableModal';
 import AuthModal from './components/AuthModal';
-import VintedView from './components/VintedView';
+const VintedView = lazy(() => import('./components/VintedView'));
 import EditLibraryModal from './components/EditLibraryModal';
 import DuplicateWarningModal from './components/DuplicateWarningModal';
 import { Scan, BookPlus, Filter, Library, Table as TableIcon } from 'lucide-react';
-import { exportLibraryToExcel } from './services/exportService';
+
 import { exportLibraryCsv } from './services/storage';
 import { findDuplicateBook } from './services/duplicateService';
 import {
@@ -71,6 +71,17 @@ export default function App() {
       console.error('Chyba při načítání knih:', err);
     } finally {
       setLoadingBooks(false);
+    }
+  };
+
+  const handleExportExcel = async () => {
+    try {
+      // Keep the relatively large XLSX library out of the initial app bundle.
+      const { exportLibraryToExcel } = await import('./services/exportService');
+      await exportLibraryToExcel(currentLibrary, books);
+    } catch (err) {
+      console.error('Chyba při exportu do Excelu:', err);
+      alert('Export do Excelu se nepodařilo připravit. Zkuste to prosím znovu.');
     }
   };
 
@@ -311,12 +322,14 @@ export default function App() {
       {/* Main Content Area */}
       <main className="flex-1 max-w-screen-2xl w-full mx-auto px-3 py-4 sm:px-6 sm:py-6 lg:px-8 space-y-5 sm:space-y-6">
         {activeTab === 'vinted' ? (
-          <VintedView
-            onOpenAuthModal={() => setShowAuthModal(true)}
-            onOpenScanner={() => setShowScannerModal(true)}
-            searchQuery={searchQuery}
-            setSearchQuery={setSearchQuery}
-          />
+          <Suspense fallback={<div className="py-8 text-center text-sm text-[#7d5d42]">Načítám sousedskou výpůjčku...</div>}>
+            <VintedView
+              onOpenAuthModal={() => setShowAuthModal(true)}
+              onOpenScanner={() => setShowScannerModal(true)}
+              searchQuery={searchQuery}
+              setSearchQuery={setSearchQuery}
+            />
+          </Suspense>
         ) : (
           <>
             {/* Librarian Header & Big Scan Button */}
@@ -539,11 +552,15 @@ export default function App() {
         onOpenEditLibrary={() => setShowEditLibraryModal(true)}
       />
 
-      <ScannerModal
-        isOpen={showScannerModal}
-        onClose={() => setShowScannerModal(false)}
-        onBookFound={handleBookFoundFromScanner}
-      />
+      {showScannerModal && (
+        <Suspense fallback={<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 text-sm text-white">Načítám skener...</div>}>
+          <ScannerModal
+            isOpen={true}
+            onClose={() => setShowScannerModal(false)}
+            onBookFound={handleBookFoundFromScanner}
+          />
+        </Suspense>
+      )}
 
       <BookFormModal
         isOpen={showBookFormModal}
@@ -572,7 +589,7 @@ export default function App() {
         books={books}
         role={role}
         onUpdateBook={handleUpdateBookPartial}
-        onExportExcel={() => exportLibraryToExcel(currentLibrary, books)}
+        onExportExcel={handleExportExcel}
         onExportCsv={() => exportLibraryCsv(currentLibrary)}
       />
 
