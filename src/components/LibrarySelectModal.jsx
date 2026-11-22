@@ -122,8 +122,8 @@ export default function LibrarySelectModal({ role, currentLibrary, onSelectLibra
   );
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-      <div className="bg-[#f7f3ed] border-2 border-[#8b2626]/30 rounded-2xl max-w-lg w-full p-6 shadow-2xl relative overflow-hidden">
+    <div data-mobile-dialog-overlay className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+      <div data-mobile-dialog-panel className="bg-[#f7f3ed] border-2 border-[#8b2626]/30 rounded-2xl max-w-lg w-full p-6 shadow-2xl relative overflow-hidden">
         <div className="flex items-center space-x-3 mb-4">
           <div className="p-2.5 bg-[#8b2626] text-white rounded-xl">
             <Library className="w-6 h-6" />
@@ -216,8 +216,8 @@ export default function LibrarySelectModal({ role, currentLibrary, onSelectLibra
 
         {/* Password Verification Modal / Overlay */}
         {pendingLibrary && (
-          <div className="fixed inset-0 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4 z-60">
-            <div className="bg-[#f7f3ed] border-2 border-[#8b2626] rounded-2xl max-w-sm w-full p-6 shadow-2xl relative">
+          <div data-mobile-dialog-overlay className="fixed inset-0 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4 z-60">
+            <div data-mobile-dialog-panel className="bg-[#f7f3ed] border-2 border-[#8b2626] rounded-2xl max-w-sm w-full p-6 shadow-2xl relative">
               <button
                 onClick={() => setPendingLibrary(null)}
                 className="absolute top-3 right-3 text-[#a1887f] hover:text-[#3a2212] p-1 rounded-full cursor-pointer"
